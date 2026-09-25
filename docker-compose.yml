@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  twowayradio:
+    build: .
+    container_name: twowayradio-server
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "5005:5005/udp"
+    environment:
+      - TZ=UTC

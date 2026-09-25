@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ChatGPT Voice | Two-Way Radio</title>
+  <link rel="stylesheet" href="css/radio.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.css" rel="stylesheet">
+</head>
+<body>
+
+  <div class="chatgpt-layout">
+
+    <!-- ChatGPT Style Sidebar -->
+    <aside class="sidebar" id="app-sidebar">
+      <div class="sidebar-top">
+        <div class="sidebar-brand">
+          <div class="gpt-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="22"></line>
+            </svg>
+          </div>
+          <span class="brand-text">Radio Voice</span>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+          <button class="new-broadcast-btn" id="btn-sidebar-create" title="Create New Channel" style="flex: 1;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Create Channel</span>
+          </button>
+          <button class="new-broadcast-btn" id="btn-sidebar-auto-join" title="Auto-Join Nearest Repeater" style="flex: 1;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            <span>Auto-Join</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Sidebar Search Input -->
+      <div class="sidebar-search-box">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" id="channel-search-input" placeholder="Filter channels..." class="sidebar-search-input">
+      </div>
+
+      <!-- Channels List (ChatGPT Chat History style) -->
+      <div class="sidebar-section-title">CHANNELS &amp; REPEATERS</div>
+      <div class="sidebar-channels" id="sidebar-channels-list">
+        <!-- Populated dynamically like chat threads -->
+      </div>
+
+      <!-- Active Users in Channel -->
+      <div class="sidebar-section-title">
+        <span>ACTIVE USERS</span>
+        <span class="users-pill" id="users-count-chip">1 Online</span>
+      </div>
+      <div class="sidebar-users" id="user-list-items">
+        <!-- Populated dynamically -->
+      </div>
+
+      <!-- User Profile Card at Bottom of Sidebar -->
+      <div class="sidebar-footer">
+        <div class="user-profile-btn" id="btn-open-settings" title="Open Settings">
+          <div class="avatar-circle">
+            <span id="avatar-initials">U</span>
+          </div>
+          <div class="profile-details">
+            <span class="profile-name" id="lcd-callsign">UNIT-000</span>
+            <span class="profile-status" id="gps-city-text">Detecting location...</span>
+          </div>
+          <div class="settings-gear-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Mobile Sidebar Backdrop Overlay -->
+    <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
+
+    <!-- Main Center Stage -->
+    <main class="main-content">
+      <!-- Ambient Atmospheric Lighting Backdrop -->
+      <div class="voice-ambient-bg" id="voice-ambient-bg"></div>
+
+      <!-- Dynamic Island Tactical HUD Pill (Slide down notifications) -->
+      <div class="dynamic-hud" id="dynamic-hud">
+        <div class="hud-pill" id="hud-pill">
+          <span class="hud-icon" id="hud-icon">🟢</span>
+          <span class="hud-text" id="hud-text">Radio Console Ready</span>
+        </div>
+      </div>
+
+      <!-- Top Minimal Header -->
+      <header class="topbar">
+        <div class="topbar-left">
+          <button class="icon-toggle-btn" id="btn-toggle-sidebar" title="Toggle Sidebar">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+
+          <!-- Channel Selector Pill (like GPT-4 model dropdown) -->
+          <div class="model-selector-pill" id="btn-model-selector" title="Select Radio Channel">
+            <span class="model-name" id="lcd-ch-name">CH 01 - CENTRAL DISPATCH</span>
+            <select id="select-channel" class="model-select-hidden">
+              <option value="1">Loading channels...</option>
+            </select>
+            <svg class="chevron-down" id="channel-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"></polyline></svg>
+          </div>
+
+          <!-- Custom Floating Channel Dropdown Menu Popover (ChatGPT 4o style) -->
+          <div class="channel-popover-menu" id="channel-popover-menu" style="display: none;">
+            <div class="popover-header">SELECT RADIO CHANNEL</div>
+            <div class="popover-channels-list" id="popover-channels-list">
+              <!-- Populated dynamically -->
+            </div>
+          </div>
+        </div>
+
+        <div class="topbar-right">
+          <!-- Network Latency Ping Pill -->
+          <div class="ping-pill" id="ping-pill" title="Network Latency (RTT) - Click to test">
+            <span class="ping-dot" id="ping-dot"></span>
+            <span class="ping-text" id="ping-text">-- ms</span>
+          </div>
+
+          <div class="connection-status-pill">
+            <span class="status-dot-mini" id="led-pwr"></span>
+            <span id="net-status-text">Connected</span>
+          </div>
+
+          <span class="frequency-badge" id="lcd-freq">446.00625 MHz</span>
+
+          <!-- WebRTC Video Call Toggle -->
+          <button class="icon-toggle-btn" id="btn-toggle-video" title="Video Call (Camera Feed) [V]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 7l-7 5 7 5V7z"></path>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+            </svg>
+            <span class="video-indicator-dot" id="video-active-dot" style="display:none;"></span>
+          </button>
+
+          <!-- Screen Share Toggle -->
+          <button class="icon-toggle-btn" id="btn-toggle-screen" title="Share Screen (Desktop / Window) [W]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+          </button>
+
+          <!-- Tactical Channel Chat Toggle -->
+          <button class="icon-toggle-btn" id="btn-toggle-chat" title="Channel Messages & Chat">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path>
+            </svg>
+            <span class="chat-unread-badge" id="chat-unread-dot" style="display:none;">0</span>
+          </button>
+
+          <!-- Tactical GPS Radar Map Toggle -->
+          <button class="icon-toggle-btn" id="btn-toggle-map" title="Live Tactical GPS Radar Map [G]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="2" x2="12" y2="22"></line>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <circle cx="12" cy="12" r="4" stroke-dasharray="2 2"></circle>
+            </svg>
+            <span class="radar-dot-pulse" id="radar-top-pulse"></span>
+          </button>
+
+          <!-- Transmission Log Drawer Toggle -->
+          <button class="icon-toggle-btn" id="btn-toggle-log" title="Transmission Log & Activity">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span class="log-indicator-dot" id="log-unread-dot" style="display:none;"></span>
+          </button>
+
+          <!-- Keyboard Shortcuts Modal Toggle -->
+          <button class="icon-toggle-btn" id="btn-toggle-shortcuts" title="Keyboard Shortcuts (1-8, Space, S, P, R, M)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+              <line x1="6" y1="8" x2="6" y2="8"></line>
+              <line x1="10" y1="8" x2="10" y2="8"></line>
+              <line x1="14" y1="8" x2="14" y2="8"></line>
+              <line x1="18" y1="8" x2="18" y2="8"></line>
+              <line x1="6" y1="12" x2="6" y2="12"></line>
+              <line x1="10" y1="12" x2="10" y2="12"></line>
+              <line x1="14" y1="12" x2="14" y2="12"></line>
+              <line x1="18" y1="12" x2="18" y2="12"></line>
+              <line x1="7" y1="16" x2="17" y2="16"></line>
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <!-- Center Stage: ChatGPT Voice Orb Experience -->
+      <div class="voice-center-stage">
+
+        <!-- Active Speaker Banner -->
+        <div class="voice-speaker-badge" id="voice-speaker-box">
+          <span class="pulse-dot" id="speaker-pulse-dot"></span>
+          <span id="lcd-speaker-label">ACTIVE SPEAKER:</span>
+          <strong id="lcd-speaker">--</strong>
+        </div>
+
+        <!-- The Iconic ChatGPT Voice Orb with Organic Audio Ripples -->
+        <div class="voice-orb-container" id="voice-orb-container">
+          <div class="voice-orb-halo" id="voice-orb-halo"></div>
+          <div class="voice-orb-ripple voice-orb-ripple-1" id="orb-ripple-1"></div>
+          <div class="voice-orb-ripple voice-orb-ripple-2" id="orb-ripple-2"></div>
+          <button class="voice-orb" id="btn-ptt" title="Push to Talk (Spacebar or Click)">
+            <div class="voice-orb-core">
+              <div class="mic-wave-icon" id="mic-icon-svg">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                  <line x1="12" y1="19" x2="12" y2="22"></line>
+                </svg>
+              </div>
+            </div>
+          </button>
+        </div>
+
+        <!-- State Text (Listening / Transmitting / Standby) -->
+        <div class="voice-state-title" id="lcd-status">STANDBY</div>
+        <div class="voice-hint-text" id="voice-hint">[ Hold Spacebar or tap Orb to speak ]</div>
+
+        <!-- Sleek Audio Wave Visualizer Canvas (ChatGPT Fluid Wave) -->
+        <div class="voice-visualizer-bar">
+          <canvas id="vu-meter-canvas" width="380" height="24"></canvas>
+        </div>
+
+      </div>
+
+      <!-- Bottom Floating Controls Dock (ChatGPT style input pill) -->
+      <footer class="bottom-dock">
+        <div class="dock-pill">
+
+          <!-- Channel Step Left -->
+          <button class="dock-btn" id="btn-prev-ch" title="Previous Channel (◄)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+
+          <!-- Channel Scanner Button -->
+          <button class="dock-btn" id="btn-scan" title="Toggle Channel Scanner (S)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="12" x2="12" y2="2"></line>
+              <path d="M12 12l7 7"></path>
+            </svg>
+            <span class="dock-label">Scan</span>
+          </button>
+
+          <!-- Radio Ping / Check Button -->
+          <button class="dock-btn" id="btn-radio-ping" title="Radio Ping / Link Check (P)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 12h2M6 12a6 6 0 0 1 12 0M10 12a2 2 0 0 1 4 0M20 12h2"></path>
+              <circle cx="12" cy="12" r="1.5" fill="currentColor"></circle>
+            </svg>
+            <span class="dock-label">Ping</span>
+          </button>
+
+          <!-- Instant Replay Button -->
+          <button class="dock-btn" id="btn-replay" title="Replay Last Transmission (R)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+            <span class="dock-label">Replay</span>
+          </button>
+
+          <!-- Quick Mute / Volume Button -->
+          <button class="dock-btn" id="btn-quick-mute" title="Quick Mute / Unmute Audio (M)">
+            <svg id="icon-speaker" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+            </svg>
+            <span class="dock-label" id="label-quick-mute">Mute</span>
+          </button>
+
+          <!-- Video Call Button -->
+          <button class="dock-btn" id="btn-dock-video" title="Channel Video Call [V]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M23 7l-7 5 7 5V7z"></path>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+            </svg>
+            <span class="dock-label">Video</span>
+          </button>
+
+          <!-- Screen Share Button -->
+          <button class="dock-btn" id="btn-dock-screen" title="Share Screen (Desktop / Window) [W]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+            <span class="dock-label">Screen</span>
+          </button>
+
+          <!-- Channel Text Chat Button -->
+          <button class="dock-btn" id="btn-dock-chat" title="Channel Chat & Messages">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z"></path>
+            </svg>
+            <span class="dock-label">Chat</span>
+          </button>
+
+          <!-- Tactical GPS Radar Map Button -->
+          <button class="dock-btn" id="btn-dock-map" title="Live Tactical GPS Radar Map [G]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"></circle>
+              <line x1="12" y1="3" x2="12" y2="21"></line>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <circle cx="12" cy="12" r="3.5"></circle>
+            </svg>
+            <span class="dock-label">Radar</span>
+          </button>
+
+          <!-- Emergency Alert Button -->
+          <button class="dock-btn dock-alert-btn" id="btn-alert" title="Emergency 1750Hz Siren">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            <span class="dock-label">Alert</span>
+          </button>
+
+          <!-- Channel Step Right -->
+          <button class="dock-btn" id="btn-next-ch" title="Next Channel">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+
+        </div>
+      </footer>
+
+    </main>
+
+  </div>
+
+  <!-- Create Channel Modal -->
+  <div class="modal-overlay" id="create-channel-modal" style="display: none;">
+    <div class="modal-card modal-card-sm">
+      <div class="modal-header">
+        <h3 class="modal-title">Create Channel</h3>
+        <button class="modal-close-btn" id="btn-close-create-channel">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body" style="display: flex; flex-direction: column; gap: 16px;">
+        <div class="setting-row">
+          <input type="text" id="input-create-ch-name" class="gpt-input" placeholder="Channel Name (e.g. Squad Alpha)" maxlength="32" style="width: 100%;">
+        </div>
+        <div class="setting-toggle-row">
+          <div class="setting-label-col">
+            <span class="setting-name">Private Channel</span>
+            <span class="setting-desc">Require password to join</span>
+          </div>
+          <label class="gpt-switch">
+            <input type="checkbox" id="check-create-ch-private">
+            <span class="slider-switch"></span>
+          </label>
+        </div>
+        <div class="setting-row" id="create-ch-password-row" style="display: none;">
+          <input type="text" id="input-create-ch-password" class="gpt-input" placeholder="Channel Password" style="width: 100%;">
+        </div>
+        <button class="gpt-btn" id="btn-submit-create-channel">Create & Join</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ChatGPT Style Settings Modal Dialog -->
+  <div class="modal-overlay" id="settings-modal" style="display: none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Radio Settings</h3>
+        <button class="modal-close-btn" id="btn-close-settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Callsign Input -->
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <span class="setting-name">Your Callsign</span>
+            <span class="setting-desc">Identifier transmitted over radio</span>
+          </div>
+          <input type="text" id="input-callsign" class="gpt-input" maxlength="16" placeholder="e.g. ALPHA-1">
+        </div>
+
+        <!-- Roger Beep Style -->
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <span class="setting-name">Roger Beep Style</span>
+            <span class="setting-desc">Tone played when unkeying</span>
+          </div>
+          <select id="select-beep" class="gpt-select">
+            <option value="motorola">Motorola Classic 2-Tone</option>
+            <option value="quindar">NASA Apollo Quindar Tone</option>
+            <option value="cb">CB Radio Single Beep</option>
+            <option value="none">Disabled (Silent)</option>
+          </select>
+        </div>
+
+        <!-- Audio FX Preview Button -->
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <span class="setting-name">Roger Beep Test</span>
+            <span class="setting-desc">Preview chosen unkey beep sound</span>
+          </div>
+          <button class="gpt-btn-small" id="btn-preview-beep">▶ Play Beep</button>
+        </div>
+
+        <!-- Volume Slider -->
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <span class="setting-name">Output Volume</span>
+            <span class="setting-desc" id="volume-val">80%</span>
+          </div>
+          <input type="range" id="slider-volume" min="0" max="1" step="0.05" value="0.8" class="gpt-slider">
+        </div>
+
+        <!-- Microphone Input Gain -->
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <span class="setting-name">Microphone Gain</span>
+            <span class="setting-desc" id="mic-gain-val">100% (Normal)</span>
+          </div>
+          <input type="range" id="slider-mic-gain" min="0.5" max="3.0" step="0.1" value="1.0" class="gpt-slider">
+        </div>
+
+        <!-- Squelch / Noise Gate Threshold -->
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <span class="setting-name">Noise Gate (Squelch)</span>
+            <span class="setting-desc" id="squelch-val">Normal</span>
+          </div>
+          <input type="range" id="slider-mic-squelch" min="0.001" max="0.03" step="0.002" value="0.008" class="gpt-slider">
+        </div>
+
+        <!-- GPS Location Details -->
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <span class="setting-name">GPS Location</span>
+            <span class="setting-desc" id="gps-coords-text">--.----°, --.----°</span>
+          </div>
+          <button class="gpt-btn" id="btn-refresh-location">
+            <span>📍 Detect GPS</span>
+          </button>
+        </div>
+
+        <!-- Network Latency & Ping Details -->
+        <div class="setting-row">
+          <div class="setting-label-col">
+            <span class="setting-name">Network Latency (RTT)</span>
+            <span class="setting-desc" id="setting-ping-detail">Round-trip latency to radio server</span>
+          </div>
+          <div class="setting-stat-pill-group">
+            <span class="setting-stat-pill" id="modal-ping-val">-- ms</span>
+            <button class="gpt-btn-small" id="btn-modal-ping-test">Test Now</button>
+          </div>
+        </div>
+
+        <!-- Toggles -->
+        <div class="setting-toggle-row">
+          <div class="setting-label-col">
+            <span class="setting-name">Auto-Join Nearest Repeater</span>
+            <span class="setting-desc">Automatically switch to closest channel by location</span>
+          </div>
+          <label class="gpt-switch">
+            <input type="checkbox" id="check-auto-join-near" checked>
+            <span class="slider-switch"></span>
+          </label>
+        </div>
+
+        <div class="setting-toggle-row">
+          <div class="setting-label-col">
+            <span class="setting-name">Tactical Bandpass Filter</span>
+            <span class="setting-desc">300-3400 Hz voice communications spectrum</span>
+          </div>
+          <label class="gpt-switch">
+            <input type="checkbox" id="check-dsp-filter" checked>
+            <span class="slider-switch"></span>
+          </label>
+        </div>
+
+        <div class="setting-toggle-row">
+          <div class="setting-label-col">
+            <span class="setting-name">Hands-Free PTT Mode</span>
+            <span class="setting-desc">Click once to talk, click again to stop</span>
+          </div>
+          <label class="gpt-switch">
+            <input type="checkbox" id="check-toggle-ptt">
+            <span class="slider-switch"></span>
+          </label>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Activity & Transmission Log Slide-Over Drawer -->
+  <aside class="activity-drawer" id="activity-drawer">
+    <div class="activity-drawer-header">
+      <div class="activity-header-title">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span>Transmission Log</span>
+      </div>
+      <button class="icon-toggle-btn" id="btn-close-log" title="Close Log">✕</button>
+    </div>
+    <div class="activity-drawer-list" id="activity-log-list">
+      <div class="activity-empty-state">No radio activity recorded yet. Key up or switch channels to begin.</div>
+    </div>
+    <div class="activity-drawer-footer">
+      <button class="gpt-btn-small" id="btn-clear-log">Clear History</button>
+    </div>
+  </aside>
+
+  <!-- Tactical Channel Chat & Messaging Drawer -->
+  <aside class="chat-drawer" id="chat-drawer">
+    <div class="chat-drawer-header">
+      <div class="chat-header-title">
+        <span class="chat-live-pulse"></span>
+        <span id="chat-drawer-title">Channel Chat</span>
+      </div>
+      <button class="icon-toggle-btn" id="btn-close-chat" title="Close Chat">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Quick Tactical Message Chips -->
+    <div class="chat-preset-bar">
+      <button type="button" class="chat-chip" data-msg="10-4 Copy">10-4 Copy</button>
+      <button type="button" class="chat-chip" data-msg="En Route">En Route</button>
+      <button type="button" class="chat-chip" data-msg="Standby">Standby</button>
+      <button type="button" class="chat-chip" data-msg="Affirmative">Affirmative</button>
+      <button type="button" class="chat-chip" data-msg="Negative">Negative</button>
+      <button type="button" class="chat-chip" data-msg="Need Assistance">Need Assist</button>
+    </div>
+
+    <!-- Scrollable Message List -->
+    <div class="chat-messages-container" id="chat-messages-list">
+      <div class="chat-empty-state">
+        <span>💬 No messages on this channel yet.<br>Send a tactical message or tap a quick chip.</span>
+      </div>
+    </div>
+
+    <!-- Attachment Preview Strip -->
+    <div class="chat-attachment-preview-bar" id="chat-attachment-preview-bar" style="display: none;">
+      <div class="attachment-preview-content">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+        </svg>
+        <span class="attachment-preview-name" id="attachment-preview-name">file.png</span>
+      </div>
+      <button type="button" class="attachment-preview-remove" id="btn-remove-attachment" title="Remove attachment">✕</button>
+    </div>
+
+    <!-- Chat Message Composer -->
+    <form class="chat-composer-box" id="chat-composer-form">
+      <input type="file" id="chat-file-input" style="display: none;" accept="image/*, .pdf, .txt, .csv, .doc, .docx">
+      <div class="chat-composer-pill">
+        <button type="button" class="chat-attach-btn" id="btn-chat-attach" title="Attach File / Photo">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
+          </svg>
+        </button>
+        <input type="text" id="chat-input-text" class="chat-input" placeholder="Type tactical message..." maxlength="300" autocomplete="off">
+        <button type="submit" class="chat-send-btn" id="btn-chat-send" title="Send Message (Enter)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+    </form>
+  </aside>
+
+  <!-- ChatGPT Voice & Video Call Modal Stage -->
+  <div class="modal-overlay video-modal-overlay" id="video-modal" style="display: none;">
+    <div class="video-stage-card">
+      <!-- Video Header -->
+      <div class="video-stage-header">
+        <div class="video-header-left">
+          <span class="video-live-dot"></span>
+          <span class="video-stage-channel" id="video-ch-name">CH 01 - VIDEO DISPATCH</span>
+          <span class="video-call-timer" id="video-call-timer">00:00</span>
+        </div>
+        <button class="modal-close-btn" id="btn-close-video" title="Close Video">✕</button>
+      </div>
+
+      <!-- Video Screen Area -->
+      <div class="video-screen-container" id="video-screen-container">
+        <!-- Main / Remote Video Stream -->
+        <video id="remote-video" class="remote-video-feed" autoplay playsinline></video>
+
+        <!-- Remote Standby Placeholder when waiting for peer -->
+        <div class="video-placeholder" id="remote-video-placeholder">
+          <div class="video-placeholder-orb">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M23 7l-7 5 7 5V7z"></path>
+              <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+            </svg>
+          </div>
+          <span class="video-placeholder-text" id="video-status-text">Broadcasting Camera Feed...</span>
+          <span class="video-placeholder-sub">Waiting for channel peers to connect</span>
+          <button type="button" class="btn-placeholder-screenshare" id="btn-placeholder-screenshare">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+            <span>Share Screen Instead [W]</span>
+          </button>
+        </div>
+
+        <!-- Local Self-View PiP Video Stream -->
+        <div class="local-pip-box" id="local-pip-box">
+          <video id="local-video" class="local-video-feed" autoplay playsinline muted></video>
+          <span class="local-pip-label" id="local-pip-label">YOU (CAMERA)</span>
+        </div>
+
+        <!-- Remote Caller Overlay Tag -->
+        <div class="video-caller-badge" id="video-caller-badge" style="display: none;">
+          <span class="pulse-dot"></span>
+          <span id="video-caller-callsign">PEER</span>
+        </div>
+      </div>
+
+      <!-- Floating Video Action Controls Bar -->
+      <div class="video-controls-dock">
+        <!-- Camera Mute / Toggle -->
+        <button type="button" class="video-action-btn" id="btn-video-cam-toggle" title="Toggle Camera On/Off">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M23 7l-7 5 7 5V7z"></path>
+            <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
+          </svg>
+        </button>
+
+        <!-- Flip Camera (Front / Back on Mobile) -->
+        <button type="button" class="video-action-btn" id="btn-video-flip-cam" title="Switch Front/Back Camera">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 10c0-4.4-3.6-8-8-8s-8 3.6-8 8 3.6 8 8 8h1"></path>
+            <polyline points="16 14 20 18 16 22"></polyline>
+          </svg>
+        </button>
+
+        <!-- Screen Share Button -->
+        <button type="button" class="video-action-btn" id="btn-video-share-screen" title="Share Screen (Desktop / Window)">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+            <line x1="8" y1="21" x2="16" y2="21"></line>
+            <line x1="12" y1="17" x2="12" y2="21"></line>
+          </svg>
+        </button>
+
+        <!-- Video Push-to-Talk Button -->
+        <button type="button" class="video-action-btn video-ptt-btn" id="btn-video-ptt" title="Push to Talk while in video">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="22"></line>
+          </svg>
+          <span>TALK</span>
+        </button>
+
+        <!-- Fullscreen Video Toggle -->
+        <button type="button" class="video-action-btn" id="btn-video-fullscreen" title="Toggle Fullscreen">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <polyline points="9 21 3 21 3 15"></polyline>
+            <line x1="21" y1="3" x2="14" y2="10"></line>
+            <line x1="3" y1="21" x2="10" y2="14"></line>
+          </svg>
+        </button>
+
+        <!-- End Call Button (Red Hangup) -->
+        <button type="button" class="video-action-btn video-end-btn" id="btn-video-hangup" title="End Video Call">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-6-6 19.8 19.8 0 0 1-3.12-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path>
+            <line x1="23" y1="1" x2="1" y2="23"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tactical GPS Live Vector Map Modal Stage (Mapbox GL JS) -->
+  <div class="modal-overlay tactical-map-modal-overlay" id="map-modal" style="display: none;">
+    <div class="tactical-map-stage" id="tactical-map-stage">
+      <!-- Tactical Map HUD Header -->
+      <div class="map-hud-header">
+        <div class="map-hud-left">
+          <div class="map-radar-indicator">
+            <span class="radar-ping-ring"></span>
+            <span class="radar-ping-core"></span>
+          </div>
+          <div class="map-hud-title-col">
+            <div class="map-hud-title-row">
+              <span class="map-hud-title">TACTICAL VECTOR MAP</span>
+              <span class="map-badge-live">MAPBOX GL</span>
+              <span class="map-badge-mode" id="map-theme-badge">OBSIDIAN</span>
+            </div>
+            <span class="map-hud-subtitle" id="map-active-channel-info">CH 01 • CENTRAL DISPATCH</span>
+          </div>
+        </div>
+
+        <div class="map-hud-stats">
+          <div class="hud-stat-badge" title="Active Radio Units on Map">
+            <span class="stat-num" id="map-units-count">1</span>
+            <span class="stat-lbl">Units Online</span>
+          </div>
+          <div class="hud-stat-badge" title="Repeaters in Range">
+            <span class="stat-num" id="map-repeaters-count">8</span>
+            <span class="stat-lbl">Repeaters</span>
+          </div>
+          <div class="hud-stat-badge" title="Distance from Your GPS to Active Repeater">
+            <span class="stat-num" id="map-hud-my-dist">--</span>
+            <span class="stat-lbl">To Repeater</span>
+          </div>
+        </div>
+
+        <div class="map-hud-actions">
+          <!-- Toggle Map Style (Dark Vector / Satellite) -->
+          <button type="button" class="map-action-btn" id="btn-map-toggle-style" title="Switch Map Style (Dark Vector / Satellite Imagery)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"></polygon>
+              <line x1="8" y1="2" x2="8" y2="18"></line>
+              <line x1="16" y1="6" x2="16" y2="22"></line>
+            </svg>
+            <span id="label-map-style">Satellite</span>
+          </button>
+          <!-- Toggle 3D Tilt Buildings -->
+          <button type="button" class="map-action-btn" id="btn-map-toggle-3d" title="Toggle 3D Buildings & Pitch Angle">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="m21.12 6.4-6.05-4.06a2 2 0 0 0-2.17-.05L2.95 8.41a2 2 0 0 0-.95 1.7v5.82a2 2 0 0 0 .88 1.66l6.05 4.07a2 2 0 0 0 2.17.05l9.93-6.12a2 2 0 0 0 .97-1.7V8.06a2 2 0 0 0-.88-1.66Z"></path>
+              <path d="m10 22 10-6.5"></path>
+              <path d="M10 12 2 7"></path>
+              <path d="m10 12 11.5-1"></path>
+              <path d="M10 12v10"></path>
+            </svg>
+            <span id="label-map-pitch">3D</span>
+          </button>
+          <!-- Toggle Coverage Zones -->
+          <button type="button" class="map-action-btn active" id="btn-map-toggle-coverage" title="Toggle Repeater Coverage Zones">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"></circle>
+              <circle cx="12" cy="12" r="4" stroke-dasharray="2 2"></circle>
+            </svg>
+            <span>Zones</span>
+          </button>
+          <!-- Center My Position -->
+          <button type="button" class="map-action-btn" id="btn-map-recenter" title="Center on My GPS Location">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="3 11 22 2 13 21 11 13 3 11"></polygon>
+            </svg>
+            <span>My Pos</span>
+          </button>
+          <!-- Fit All -->
+          <button type="button" class="map-action-btn" id="btn-map-fit-all" title="Fit All Units and Repeaters in View">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="22" y1="12" x2="18" y2="12"></line>
+              <line x1="6" y1="12" x2="2" y2="12"></line>
+              <line x1="12" y1="6" x2="12" y2="2"></line>
+              <line x1="12" y1="22" x2="12" y2="18"></line>
+            </svg>
+            <span>Fit All</span>
+          </button>
+          <!-- Close -->
+          <button type="button" class="modal-close-btn" id="btn-close-map" title="Close Map [Esc / G]">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Repeater Channel Selector Ribbon -->
+      <div class="radar-repeater-ribbon" id="radar-repeater-ribbon">
+        <!-- Dynamically populated channel selector chips -->
+      </div>
+
+      <!-- Tactical Map Viewport (Clean Mapbox GL Vector Container) -->
+      <div class="tactical-map-viewport" id="tactical-map-viewport">
+        <!-- Mapbox GL Map Container -->
+        <div class="tactical-map-container" id="tactical-map-view"></div>
+      </div>
+
+      <!-- Bottom HUD Strip: Legend & Active Units Strip -->
+      <div class="map-bottom-drawer">
+        <div class="map-legend">
+          <div class="legend-item"><span class="legend-dot dot-self"></span><span>You</span></div>
+          <div class="legend-item"><span class="legend-dot dot-peer"></span><span>Channel Unit</span></div>
+          <div class="legend-item"><span class="legend-dot dot-repeater"></span><span>Repeater</span></div>
+          <div class="legend-item"><span class="legend-line"></span><span>Line-of-Sight</span></div>
+        </div>
+        <div class="map-unit-cards" id="map-unit-cards">
+          <!-- Dynamically populated unit pills with quick click-to-focus -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keyboard Shortcuts Modal Dialog -->
+  <div class="modal-overlay" id="shortcuts-modal" style="display: none;">
+    <div class="modal-card modal-card-sm">
+      <div class="modal-header">
+        <h3 class="modal-title">Keyboard Shortcuts</h3>
+        <button class="modal-close-btn" id="btn-close-shortcuts">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="shortcut-list">
+          <div class="shortcut-item"><kbd class="kbd-key">Spacebar</kbd><span>Push to Talk (PTT)</span></div>
+          <div class="shortcut-item"><kbd class="kbd-key">1 – 8</kbd><span>Jump to Channel 1 – 8</span></div>
+          <div class="shortcut-item"><kbd class="kbd-key">S</kbd><span>Toggle Channel Scanner</span></div>
+          <div class="shortcut-item"><kbd class="kbd-key">P</kbd><span>Radio Check / Ping Latency</span></div>
+          <div class="shortcut-item"><kbd class="kbd-key">R</kbd><span>Replay Last Transmission</span></div>
+          <div class="shortcut-item"><kbd class="kbd-key">A</kbd><span>Emergency Siren Alert</span></div>
+          <div class="shortcut-item"><kbd class="kbd-key">M</kbd><span>Mute / Unmute Audio</span></div>
+          <div class="shortcut-item"><kbd class="kbd-key">C</kbd><span>Channel Messages & Chat</span></div>
+          <div class="shortcut-item"><kbd class="kbd-key">G</kbd><span>Tactical GPS Radar Map</span></div>
+          <div class="shortcut-item"><kbd class="kbd-key">V</kbd><span>Video Call (Camera Feed)</span></div>
+          <div class="shortcut-item"><kbd class="kbd-key">W</kbd><span>Share Screen (Desktop / Window)</span></div>
+          <div class="shortcut-item"><kbd class="kbd-key">L</kbd><span>Toggle Transmission Log</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden elements to preserve JS compatibility -->
+  <div style="display: none;">
+    <span id="lcd-users">0 ON CH</span>
+    <span id="lcd-dsp-status">NFM / 16K</span>
+    <span id="led-tx"></span>
+    <span id="led-rx"></span>
+    <button id="btn-auto-join-near"></button>
+    <span id="gps-status-badge"></span>
+  </div>
+
+  <!-- Mapbox GL JS Library -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
+  <!-- Audio Processing Scripts -->
+  <script src="js/sounds.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/radio.js"></script>
+</body>
+</html>

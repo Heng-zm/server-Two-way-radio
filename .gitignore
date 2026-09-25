@@ -1,0 +1,26 @@
+# Binaries and build artifacts
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+dist/
+twowayradio
+twowayradio.exe
+server.exe
+
+# Uploaded chat media
+data/uploads/*
+!data/uploads/.gitkeep
+
+# Environment and secrets
+.env
+.env.*
+*.local
+
+# Editor and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
