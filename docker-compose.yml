@@ -10,3 +10,8 @@ services:
       - "5005:5005/udp"
     environment:
       - TZ=UTC
+      - PORT=8080
+      - UDP_PORT=5005
+      - TOT_SECONDS=60
+    volumes:
+      - ./data/uploads:/app/data/uploads

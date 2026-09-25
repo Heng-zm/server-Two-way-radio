@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -52,6 +53,23 @@ func main() {
 	cfg.HTTPPort = *portFlag
 	cfg.UDPPort = *udpFlag
 	cfg.TOTDuration = time.Duration(*totFlag) * time.Second
+
+	// Environment variable overrides (essential for Docker & Cloud Platforms)
+	if envPort := os.Getenv("PORT"); envPort != "" {
+		if p, err := strconv.Atoi(envPort); err == nil && p > 0 {
+			cfg.HTTPPort = p
+		}
+	}
+	if envUDP := os.Getenv("UDP_PORT"); envUDP != "" {
+		if u, err := strconv.Atoi(envUDP); err == nil && u >= 0 {
+			cfg.UDPPort = u
+		}
+	}
+	if envTOT := os.Getenv("TOT_SECONDS"); envTOT != "" {
+		if t, err := strconv.Atoi(envTOT); err == nil && t > 0 {
+			cfg.TOTDuration = time.Duration(t) * time.Second
+		}
+	}
 
 	log.Println("==================================================")
 	log.Println("   TWO-WAY RADIO / WALKIE-TALKIE SERVER (Go)    ")
@@ -117,6 +135,28 @@ func main() {
 	mux.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(hub.GetStatus())
+	})
+
+	// Healthcheck endpoints for Docker, Kubernetes, and Cloud Load Balancers
+	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"status": "healthy",
+			"time":   time.Now().UTC().Format(time.RFC3339),
+		})
+	})
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
+	})
+
+	// Runtime Client Config
+	mux.HandleFunc("/api/config", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(map[string]interface{}{
+			"mapbox_token": os.Getenv("MAPBOX_TOKEN"),
+		})
 	})
 
 	// Ensure uploads directory exists
