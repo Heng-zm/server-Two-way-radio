@@ -1,0 +1,8 @@
+twowayradio.exe
+*.exe
+.git
+.github
+.vscode
+.idea
+data/uploads/*
+!data/uploads/.gitkeep
