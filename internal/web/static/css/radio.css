@@ -1811,44 +1811,130 @@ h1, h2, h3, h4, .brand-text, .voice-state-title, .modal-title, .chat-header-titl
 /* Chat File & Image Attachment Preview & Rendering */
 .chat-attachment-preview-bar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 6px 14px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 14px;
   background: rgba(16, 185, 129, 0.12);
-  border-top: 1px solid rgba(16, 185, 129, 0.3);
+  border-top: 1px solid rgba(16, 185, 129, 0.28);
   font-size: 12px;
   color: var(--text-primary);
   animation: slide-in 0.18s ease-out;
 }
 
+.attachment-preview-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+}
+
 .attachment-preview-content {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 8px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--color-brand);
+  min-width: 0;
+  flex: 1;
 }
 
 .attachment-preview-name {
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-primary);
   font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-preview-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.upload-speed-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.16);
+  border: 1px solid rgba(56, 189, 248, 0.38);
+  padding: 2px 7px;
+  border-radius: 5px;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.upload-percent-badge {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.22);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  padding: 2px 8px;
+  border-radius: 5px;
+  white-space: nowrap;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
+}
+
+.upload-progress-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  margin-top: 2px;
+}
+
+.upload-progress-track {
+  width: 100%;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+}
+
+.upload-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #10b981, #38bdf8);
+  border-radius: 4px;
+  transition: width 0.15s ease-out;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.6);
+}
+
+.upload-progress-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--text-secondary);
 }
 
 .attachment-preview-remove {
-  background: transparent;
+  background: rgba(255, 255, 255, 0.06);
   border: none;
   color: var(--text-tertiary);
-  font-size: 16px;
+  font-size: 14px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
   cursor: pointer;
-  padding: 0 4px;
-  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
 }
 
 .attachment-preview-remove:hover {
-  color: #ff5555;
+  background: rgba(239, 68, 68, 0.2);
+  color: #ef4444;
 }
 
 .chat-img-attachment-container {

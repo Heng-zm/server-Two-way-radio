@@ -2500,14 +2500,125 @@ document.addEventListener('DOMContentLoaded', () => {
     if (chatDrawer) chatDrawer.classList.remove('open');
   }
 
+  let currentUploadXHR = null;
+
+  function formatBytes(bytes) {
+    if (!bytes || bytes <= 0) return '0 B';
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(0) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+  }
+
   function clearChatAttachment() {
+    if (currentUploadXHR) {
+      try { currentUploadXHR.abort(); } catch (e) {}
+      currentUploadXHR = null;
+    }
     const fileInput = document.getElementById('chat-file-input');
     if (fileInput) fileInput.value = '';
     const btnAttach = document.getElementById('btn-chat-attach');
     if (btnAttach) btnAttach.style.color = 'var(--text-tertiary)';
     const previewBar = document.getElementById('chat-attachment-preview-bar');
     if (previewBar) previewBar.style.display = 'none';
+    const progressContainer = document.getElementById('upload-progress-container');
+    if (progressContainer) progressContainer.style.display = 'none';
+    const speedBadge = document.getElementById('upload-speed-badge');
+    if (speedBadge) speedBadge.style.display = 'none';
+    const percentBadge = document.getElementById('upload-percent-badge');
+    if (percentBadge) percentBadge.style.display = 'none';
+    const progressFill = document.getElementById('upload-progress-fill');
+    if (progressFill) progressFill.style.width = '0%';
+    const sendBtn = document.getElementById('btn-chat-send');
+    if (sendBtn) sendBtn.disabled = false;
     if (chatInputText) chatInputText.placeholder = 'Type tactical message...';
+  }
+
+  function uploadFileWithProgress(file, onProgress) {
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      currentUploadXHR = xhr;
+
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const startTime = Date.now();
+      let lastLoaded = 0;
+      let lastTime = startTime;
+      let speed = 0;
+
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const now = Date.now();
+          const deltaMs = now - lastTime;
+
+          if (deltaMs >= 140 || e.loaded === e.total) {
+            const deltaBytes = e.loaded - lastLoaded;
+            const currentSpeed = (deltaBytes / (Math.max(1, deltaMs) / 1000));
+            speed = speed === 0 ? currentSpeed : (speed * 0.35 + currentSpeed * 0.65);
+            lastLoaded = e.loaded;
+            lastTime = now;
+          }
+
+          const percent = Math.min(100, Math.round((e.loaded / e.total) * 100));
+
+          let speedStr = '0 KB/s';
+          if (speed >= 1024 * 1024) {
+            speedStr = `${(speed / (1024 * 1024)).toFixed(1)} MB/s`;
+          } else if (speed > 0) {
+            speedStr = `${Math.round(speed / 1024)} KB/s`;
+          }
+
+          const loadedStr = formatBytes(e.loaded);
+          const totalStr = formatBytes(e.total);
+
+          let etaStr = '';
+          if (speed > 0 && e.loaded < e.total) {
+            const remainingBytes = e.total - e.loaded;
+            const secondsLeft = Math.ceil(remainingBytes / speed);
+            etaStr = secondsLeft > 60 ? `${Math.ceil(secondsLeft / 60)}m left` : `${secondsLeft}s left`;
+          }
+
+          if (onProgress) {
+            onProgress({
+              loaded: e.loaded,
+              total: e.total,
+              percent,
+              speedStr,
+              loadedStr,
+              totalStr,
+              etaStr
+            });
+          }
+        }
+      };
+
+      xhr.onload = () => {
+        currentUploadXHR = null;
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            resolve(data);
+          } catch (err) {
+            reject(new Error('Invalid server response'));
+          }
+        } else {
+          reject(new Error('Upload failed (HTTP ' + xhr.status + ')'));
+        }
+      };
+
+      xhr.onerror = () => {
+        currentUploadXHR = null;
+        reject(new Error('Network error during upload'));
+      };
+
+      xhr.onabort = () => {
+        currentUploadXHR = null;
+        reject(new Error('Upload cancelled'));
+      };
+
+      xhr.open('POST', '/api/upload');
+      xhr.send(formData);
+    });
   }
 
   async function compressImage(file, maxDimension = 1400, quality = 0.8) {
@@ -2565,26 +2676,44 @@ document.addEventListener('DOMContentLoaded', () => {
     if (hasFile) {
       let file = fileInput.files[0];
       const previewName = document.getElementById('attachment-preview-name');
-      if (previewName) previewName.textContent = '⏳ Uploading...';
+      const progressContainer = document.getElementById('upload-progress-container');
+      const progressFill = document.getElementById('upload-progress-fill');
+      const speedBadge = document.getElementById('upload-speed-badge');
+      const percentBadge = document.getElementById('upload-percent-badge');
+      const sizeStats = document.getElementById('upload-size-stats');
+      const etaStats = document.getElementById('upload-eta-stats');
+      const sendBtn = document.getElementById('btn-chat-send');
+
+      // Initialize UI for active upload
+      if (progressContainer) progressContainer.style.display = 'flex';
+      if (speedBadge) {
+        speedBadge.style.display = 'inline-block';
+        speedBadge.textContent = '⚡ 0 KB/s';
+      }
+      if (percentBadge) {
+        percentBadge.style.display = 'inline-block';
+        percentBadge.textContent = '0%';
+      }
+      if (progressFill) progressFill.style.width = '0%';
+      if (previewName) previewName.textContent = `Sending ${file.name}...`;
+      if (sendBtn) sendBtn.disabled = true;
 
       try {
         if (file.type && file.type.startsWith('image/')) {
           file = await compressImage(file);
         }
 
-        const formData = new FormData();
-        formData.append('file', file);
-
-        const resp = await fetch('/api/upload', {
-          method: 'POST',
-          body: formData,
+        const data = await uploadFileWithProgress(file, (p) => {
+          if (progressFill) progressFill.style.width = `${p.percent}%`;
+          if (percentBadge) percentBadge.textContent = `${p.percent}%`;
+          if (speedBadge) speedBadge.textContent = `⚡ ${p.speedStr}`;
+          if (sizeStats) sizeStats.textContent = `${p.loadedStr} / ${p.totalStr}`;
+          if (etaStats) etaStats.textContent = p.etaStr;
+          if (previewName) previewName.textContent = `Sending ${file.name} (${p.percent}%)`;
         });
 
-        if (!resp.ok) {
-          throw new Error('Upload error HTTP ' + resp.status);
-        }
-
-        const data = await resp.json();
+        if (percentBadge) percentBadge.textContent = '100%';
+        if (progressFill) progressFill.style.width = '100%';
 
         if (ws && ws.readyState === WebSocket.OPEN) {
           ws.send(JSON.stringify({
@@ -2598,11 +2727,22 @@ document.addEventListener('DOMContentLoaded', () => {
             },
           }));
         }
-        clearChatAttachment();
+
+        // Smooth transition after 100% completion
+        setTimeout(() => {
+          clearChatAttachment();
+        }, 320);
+
       } catch (err) {
         console.error('[Chat] Upload failed:', err);
+        if (err.message === 'Upload cancelled') {
+          clearChatAttachment();
+          return;
+        }
+
         // Fallback: If HTTP upload fails, try sending via base64 data URL if size is under 750KB
         if (file.size < 750 * 1024) {
+          if (previewName) previewName.textContent = 'Encoding data stream...';
           const reader = new FileReader();
           reader.onload = function(e) {
             if (ws && ws.readyState === WebSocket.OPEN) {
@@ -2623,6 +2763,10 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
           alert('Upload failed: ' + err.message);
           if (previewName) previewName.textContent = file.name;
+          if (progressContainer) progressContainer.style.display = 'none';
+          if (speedBadge) speedBadge.style.display = 'none';
+          if (percentBadge) percentBadge.style.display = 'none';
+          if (sendBtn) sendBtn.disabled = false;
         }
       }
     } else {
