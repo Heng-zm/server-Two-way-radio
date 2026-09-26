@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>ChatGPT Voice | Two-Way Radio</title>
+  <title>Telegram Radio | Tactical Two-Way RoIP</title>
   <link rel="stylesheet" href="css/radio.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232aabee'><circle cx='12' cy='12' r='12'/><path d='M18.5 5.5L4.5 11l5 2 7-6-5.5 7.5 5 3.5 2.5-12.5z' fill='white'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -13,29 +13,30 @@
 </head>
 <body>
 
-  <div class="chatgpt-layout">
+  <div class="chatgpt-layout tg-layout">
 
-    <!-- ChatGPT Style Sidebar -->
-    <aside class="sidebar" id="app-sidebar">
+    <!-- Telegram Style Sidebar -->
+    <aside class="sidebar tg-sidebar" id="app-sidebar">
       <div class="sidebar-top">
         <div class="sidebar-brand">
-          <div class="gpt-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
-              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-              <line x1="12" y1="19" x2="12" y2="22"></line>
+          <div class="tg-brand-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
             </svg>
           </div>
-          <span class="brand-text">Radio Voice</span>
+          <div class="tg-brand-text-col">
+            <span class="brand-text">Telegram Radio</span>
+            <span class="brand-sub">Tactical RoIP</span>
+          </div>
         </div>
 
         <div style="display: flex; gap: 8px;">
           <button class="new-broadcast-btn" id="btn-sidebar-create" title="Create New Channel" style="flex: 1;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-            <span>Create Channel</span>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            <span>Create</span>
           </button>
           <button class="new-broadcast-btn" id="btn-sidebar-auto-join" title="Auto-Join Nearest Repeater" style="flex: 1;">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
             <span>Auto-Join</span>
           </button>
         </div>
@@ -93,7 +94,9 @@
       <!-- Dynamic Island Tactical HUD Pill (Slide down notifications) -->
       <div class="dynamic-hud" id="dynamic-hud">
         <div class="hud-pill" id="hud-pill">
-          <span class="hud-icon" id="hud-icon">🟢</span>
+          <span class="hud-icon" id="hud-icon">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="9"></circle><polyline points="12 7 12 12 15 15"></polyline></svg>
+          </span>
           <span class="hud-text" id="hud-text">Radio Console Ready</span>
         </div>
       </div>
@@ -209,7 +212,9 @@
 
         <!-- Active Speaker Banner -->
         <div class="voice-speaker-badge" id="voice-speaker-box">
-          <span class="pulse-dot" id="speaker-pulse-dot"></span>
+          <div class="speaker-sound-wave" id="speaker-pulse-dot">
+            <span></span><span></span><span></span>
+          </div>
           <span id="lcd-speaker-label">ACTIVE SPEAKER:</span>
           <strong id="lcd-speaker">--</strong>
         </div>
@@ -454,7 +459,8 @@
             <span class="setting-desc" id="gps-coords-text">--.----°, --.----°</span>
           </div>
           <button class="gpt-btn" id="btn-refresh-location">
-            <span>📍 Detect GPS</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="margin-right: 6px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+            <span>Detect GPS</span>
           </button>
         </div>
 
@@ -517,7 +523,9 @@
         </svg>
         <span>Transmission Log</span>
       </div>
-      <button class="icon-toggle-btn" id="btn-close-log" title="Close Log">✕</button>
+      <button class="icon-toggle-btn" id="btn-close-log" title="Close Log">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+      </button>
     </div>
     <div class="activity-drawer-list" id="activity-log-list">
       <div class="activity-empty-state">No radio activity recorded yet. Key up or switch channels to begin.</div>
@@ -555,7 +563,10 @@
     <!-- Scrollable Message List -->
     <div class="chat-messages-container" id="chat-messages-list">
       <div class="chat-empty-state">
-        <span>💬 No messages on this channel yet.<br>Send a tactical message or tap a quick chip.</span>
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity: 0.45; margin-bottom: 8px;">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span>No messages on this channel yet.<br>Send a tactical message or tap a quick chip.</span>
       </div>
     </div>
 
@@ -571,7 +582,9 @@
         <div class="attachment-preview-meta">
           <span class="upload-speed-badge" id="upload-speed-badge" style="display: none;">0 KB/s</span>
           <span class="upload-percent-badge" id="upload-percent-badge" style="display: none;">0%</span>
-          <button type="button" class="attachment-preview-remove" id="btn-remove-attachment" title="Remove attachment / Cancel upload">✕</button>
+          <button type="button" class="attachment-preview-remove" id="btn-remove-attachment" title="Remove attachment / Cancel upload">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
         </div>
       </div>
       <!-- Real-time Upload Progress Bar -->
@@ -587,19 +600,18 @@
     </div>
 
     <!-- Chat Message Composer -->
-    <form class="chat-composer-box" id="chat-composer-form">
+    <form class="chat-composer-box tg-composer-box" id="chat-composer-form">
       <input type="file" id="chat-file-input" style="display: none;" accept="image/*, .pdf, .txt, .csv, .doc, .docx">
-      <div class="chat-composer-pill">
+      <div class="chat-composer-pill tg-composer-pill">
         <button type="button" class="chat-attach-btn" id="btn-chat-attach" title="Attach File / Photo">
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"></path>
           </svg>
         </button>
-        <input type="text" id="chat-input-text" class="chat-input" placeholder="Type tactical message..." maxlength="300" autocomplete="off">
-        <button type="submit" class="chat-send-btn" id="btn-chat-send" title="Send Message (Enter)">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="22" y1="2" x2="11" y2="13"></line>
-            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        <input type="text" id="chat-input-text" class="chat-input tg-chat-input" placeholder="Write a message..." maxlength="300" autocomplete="off">
+        <button type="submit" class="chat-send-btn tg-send-btn" id="btn-chat-send" title="Send Message (Enter)">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
           </svg>
         </button>
       </div>
@@ -616,7 +628,9 @@
           <span class="video-stage-channel" id="video-ch-name">CH 01 - VIDEO DISPATCH</span>
           <span class="video-call-timer" id="video-call-timer">00:00</span>
         </div>
-        <button class="modal-close-btn" id="btn-close-video" title="Close Video">✕</button>
+        <button class="modal-close-btn" id="btn-close-video" title="Close Video">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
       </div>
 
       <!-- Video Screen Area -->

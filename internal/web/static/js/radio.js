@@ -149,11 +149,43 @@ document.addEventListener('DOMContentLoaded', () => {
     ],
   };
 
+  // Pure SVG Icon Registry for Dynamic Island Tactical HUD Pill banner (Strictly No Emojis)
+  const HUD_ICONS = {
+    connected: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#33c481" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><polyline points="9 12 11 14 15 10"/></svg>`,
+    disconnected: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#eb5757" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>`,
+    tx: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2aabee" stroke-width="2.5"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>`,
+    rx: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#33c481" stroke-width="2.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>`,
+    busy: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+    tot: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><polyline points="12 6 12 12 14 14"/></svg>`,
+    siren: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`,
+    channel: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2aabee" stroke-width="2.5"><rect x="5" y="9" width="14" height="12" rx="2"/><path d="M9 9V5a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v4"/><circle cx="12" cy="15" r="2"/></svg>`,
+    scan: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.5"><circle cx="12" cy="12" r="9"/><line x1="12" y1="12" x2="12" y2="3"/><path d="M12 12l6 6"/></svg>`,
+    mute: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>`,
+    unmute: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#33c481" stroke-width="2.5"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>`,
+    ping: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
+    replay: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>`,
+    gps: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>`,
+    chat: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2aabee" stroke-width="2.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>`,
+    video: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2aabee" stroke-width="2.5"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></svg>`,
+    screen: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2.5"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>`,
+    camera: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#38bdf8" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>`
+  };
+
+  const EMOJI_TO_ICON_MAP = {};
+
+  function resolveHudIcon(icon) {
+    if (!icon) return HUD_ICONS.connected;
+    if (HUD_ICONS[icon]) return HUD_ICONS[icon];
+    if (EMOJI_TO_ICON_MAP[icon]) return HUD_ICONS[EMOJI_TO_ICON_MAP[icon]];
+    if (typeof icon === 'string' && icon.includes('<svg')) return icon;
+    return HUD_ICONS.connected;
+  }
+
   // Dynamic Island Tactical HUD Pill banner
   let hudTimer = null;
   function showHUD(icon, text, duration = 2400) {
     if (!hudPill) return;
-    if (hudIcon) hudIcon.textContent = icon;
+    if (hudIcon) hudIcon.innerHTML = resolveHudIcon(icon);
     if (hudText) hudText.textContent = text;
     hudPill.classList.add('show');
 
@@ -271,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const netText = document.getElementById('net-status-text');
       if (netText) netText.textContent = 'Connected';
       setLcdStatus('ONLINE - STANDBY');
-      showHUD('🟢', 'Connected to Radio Network');
+      showHUD('connected', 'Connected to Radio Network');
       updateAmbientGlow();
 
       // Immediate ping and recurring keep-alive RTT measurement
@@ -286,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const netText = document.getElementById('net-status-text');
       if (netText) netText.textContent = 'Reconnecting...';
       setLcdStatus('DISCONNECTED');
-      showHUD('🔴', 'Disconnected - Reconnecting...');
+      showHUD('disconnected', 'Disconnected - Reconnecting...');
       updateAmbientGlow();
       if (pingIntervalTimer) {
         clearInterval(pingIntervalTimer);
@@ -422,7 +454,7 @@ document.addEventListener('DOMContentLoaded', () => {
       elTxLed.classList.add('active');
       btnPtt.classList.add('transmitting');
       setLcdStatus('TRANSMITTING [TX]');
-      showHUD('🎙️', 'Floor Granted - You are ON AIR');
+      showHUD('tx', 'Floor Granted - You are ON AIR');
       updateAmbientGlow();
       soundFX.playKeyUpChirp();
 
@@ -438,7 +470,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btnPtt.classList.remove('active', 'transmitting');
       soundFX.playBusyTone();
       setLcdStatus(`BUSY (${currentSpeaker || 'OCCUPIED'})`);
-      showHUD('⚠️', `Channel Busy (${currentSpeaker || 'Occupied'})`);
+      showHUD('busy', `Channel Busy (${currentSpeaker || 'Occupied'})`);
       updateAmbientGlow();
       setTimeout(() => {
         if (!isTransmitting && !isReceiving) {
@@ -454,7 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
       btnPtt.classList.remove('active', 'transmitting');
       soundFX.playTOTTimeout();
       setLcdStatus('TOT TIMEOUT (MIC RELEASED)');
-      showHUD('⏳', 'TOT Time Limit - Mic Released');
+      showHUD('tot', 'TOT Time Limit - Mic Released');
       updateAmbientGlow();
       setTimeout(() => setLcdStatus('STANDBY'), 2500);
     } else if (status === 'idle') {
@@ -482,7 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
     elRxLed.classList.add('active');
     elLcdSpeaker.textContent = callsign;
     setLcdStatus(`RECEIVING [RX]`);
-    showHUD('🔊', `Receiving from ${callsign}`);
+    showHUD('rx', `Receiving from ${callsign}`);
     updateAmbientGlow();
     triggerHaptic(20);
     audioEngine.onIncomingStart(callsign);
@@ -528,13 +560,13 @@ document.addEventListener('DOMContentLoaded', () => {
     soundFX.playCallAlertTone();
     triggerHaptic([100, 50, 100, 50, 200]);
     setLcdStatus(`ALERT FROM ${callsign}!`);
-    showHUD('🚨', `Emergency Siren from ${callsign}`);
+    showHUD('siren', `Emergency Siren from ${callsign}`);
     const ch = channels.find(c => c.id === currentChannelID);
     addActivityLog({
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
       callsign: callsign,
       channelName: ch ? ch.name : `CH ${currentChannelID}`,
-      text: `🚨 Emergency 1750Hz Siren Alert`,
+      text: `Emergency 1750Hz Siren Alert`,
       type: 'alert',
     });
     setTimeout(() => {
@@ -695,18 +727,23 @@ document.addEventListener('DOMContentLoaded', () => {
       userListContainer.innerHTML = '';
       users.forEach((user) => {
         const item = document.createElement('div');
-        item.className = 'sidebar-user-row' + (user === myCallsign ? ' current' : '');
+        item.className = 'sidebar-user-row tg-user-row' + (user === myCallsign ? ' current' : '');
 
         const loc = userLocations[user] || (user === myCallsign ? myLocation : null);
         let distText = '';
         if (user !== myCallsign && myLocation && loc && loc.latitude && loc.longitude) {
           const d = calcDistance(myLocation.latitude, myLocation.longitude, loc.latitude, loc.longitude);
-          distText = ` • ${d < 1 ? Math.round(d * 1000) + 'm' : d.toFixed(1) + 'km'}`;
+          distText = `${d < 1 ? Math.round(d * 1000) + 'm' : d.toFixed(1) + 'km'}`;
         }
 
+        const initial = (user.charAt(0) || 'U').toUpperCase();
         item.innerHTML = `
-          <span>${user}</span>
-          <span style="font-size: 10px; opacity: 0.6;">${distText || (user === myCallsign ? 'You' : 'Active')}</span>
+          <div class="tg-user-avatar"><span>${initial}</span></div>
+          <div class="tg-user-info">
+            <span class="tg-user-name">${escapeHtml(user)}</span>
+            <span class="tg-user-status">${distText || (user === myCallsign ? 'You' : 'online')}</span>
+          </div>
+          <div class="tg-user-indicator"><span class="tg-online-dot"></span></div>
         `;
         userListContainer.appendChild(item);
       });
@@ -781,13 +818,24 @@ document.addEventListener('DOMContentLoaded', () => {
       selectChannel.value = currentChannelID;
     }
 
-    // Populate Sidebar Channels List
+    // Populate Sidebar Channels List (Telegram Chat List Style)
     const sidebarList = document.getElementById('sidebar-channels-list');
     if (sidebarList && channels.length > 0) {
       sidebarList.innerHTML = '';
+      const channelGradients = [
+        'linear-gradient(135deg, #2b5278, #1c3652)',
+        'linear-gradient(135deg, #108e6f, #0a5f4a)',
+        'linear-gradient(135deg, #7c3aed, #4c1d95)',
+        'linear-gradient(135deg, #d97706, #92400e)',
+        'linear-gradient(135deg, #0284c7, #0369a1)',
+        'linear-gradient(135deg, #be185d, #831843)',
+        'linear-gradient(135deg, #059669, #065f46)',
+        'linear-gradient(135deg, #4f46e5, #3730a3)'
+      ];
+
       channels.forEach((ch) => {
         const btn = document.createElement('button');
-        btn.className = 'sidebar-channel-item' + (ch.id === currentChannelID ? ' active' : '');
+        btn.className = 'sidebar-channel-item tg-channel-item' + (ch.id === currentChannelID ? ' active' : '');
         btn.dataset.id = ch.id;
 
         let distStr = '';
@@ -798,15 +846,24 @@ document.addEventListener('DOMContentLoaded', () => {
           distStr = ch.region;
         }
 
-        const busyBadge = ch.is_busy ? `<span class="channel-busy-pill">ON AIR</span>` : '';
-        const lockIcon = ch.is_private ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.6; margin-right: 4px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>` : `<span style="opacity: 0.4; margin-right: 4px;">#</span>`;
+        const grad = channelGradients[(ch.id - 1) % channelGradients.length] || channelGradients[0];
+        const lockIcon = ch.is_private ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="opacity: 0.7; margin-right: 4px; vertical-align: -1px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>` : '';
+        const busyBadge = ch.is_busy ? `<span class="tg-chan-badge onair">AIR</span>` : (distStr ? `<span class="tg-chan-dist">${distStr}</span>` : '');
+
         btn.innerHTML = `
-          <div class="channel-item-left">
-            ${lockIcon}
-            <span class="channel-name-text">${ch.name}</span>
-            ${busyBadge}
+          <div class="tg-chan-avatar" style="background: ${grad};">
+            <span>${ch.id}</span>
           </div>
-          ${distStr ? `<span class="channel-dist-tag">${distStr}</span>` : ''}
+          <div class="tg-chan-content">
+            <div class="tg-chan-row-top">
+              <span class="tg-chan-name">${lockIcon}${escapeHtml(ch.name)}</span>
+              <span class="tg-chan-freq">${ch.frequency.toFixed(3)} MHz</span>
+            </div>
+            <div class="tg-chan-row-bottom">
+              <span class="tg-chan-sub">${ch.is_busy ? 'Voice transmitting' : (distStr ? `Repeater • ${distStr}` : 'Tactical channel')}</span>
+              ${busyBadge}
+            </div>
+          </div>
         `;
 
         btn.onclick = () => changeChannel(ch.id);
@@ -814,7 +871,7 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     }
 
-    // Populate ChatGPT 4o Model Selector Popover Dropdown
+    // Populate Popover Dropdown (Clean SVG Checkmark)
     if (popoverList && channels.length > 0) {
       popoverList.innerHTML = '';
       channels.forEach((ch) => {
@@ -822,7 +879,7 @@ document.addEventListener('DOMContentLoaded', () => {
         row.className = 'popover-channel-row' + (ch.id === currentChannelID ? ' active' : '');
         row.dataset.id = ch.id;
 
-        const busyBadge = ch.is_busy ? `<span class="channel-busy-pill">ON AIR</span>` : '';
+        const busyBadge = ch.is_busy ? `<span class="channel-busy-pill">AIR</span>` : '';
         const lockIcon = ch.is_private ? `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.6; margin-right: 4px;"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>` : `<span class="popover-color-dot"></span>`;
         row.innerHTML = `
           <div class="popover-channel-left">
@@ -832,7 +889,7 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
           <div class="popover-channel-right">
             <span class="popover-channel-freq">${ch.frequency.toFixed(5)} MHz</span>
-            <span class="popover-check">✓</span>
+            <span class="popover-check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg></span>
           </div>
         `;
 
@@ -874,7 +931,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!silent && targetCh) {
       triggerHaptic(15);
-      showHUD('📻', `Channel ${targetCh.id}: ${targetCh.name}`);
+      showHUD('channel', `Channel ${targetCh.id}: ${targetCh.name}`);
     }
 
     if (chatDrawerTitle && targetCh) {
@@ -991,7 +1048,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnScan) btnScan.classList.add('scanning');
     soundFX.playKeyUpChirp();
     setLcdStatus('SCANNER: MONITORING CH 1..8');
-    showHUD('🔍', 'Scanning Channels 1..8');
+    showHUD('scan', 'Scanning Channels 1..8');
     updateAmbientGlow();
 
     if (scanIntervalTimer) clearInterval(scanIntervalTimer);
@@ -1020,7 +1077,7 @@ document.addEventListener('DOMContentLoaded', () => {
       stopScanner(true);
       soundFX.playScanFound();
       setLcdStatus(`SCAN: LOCKED ON ${curCh.name}`);
-      showHUD('🎯', `Traffic locked on ${curCh.name}`);
+      showHUD('busy', `Traffic locked on ${curCh.name}`);
       return;
     }
 
@@ -1037,7 +1094,7 @@ document.addEventListener('DOMContentLoaded', () => {
       stopScanner(true);
       soundFX.playScanFound();
       setLcdStatus(`SCAN: TRAFFIC DETECTED ON ${nextCh.name}`);
-      showHUD('🎯', `Traffic detected on ${nextCh.name}`);
+      showHUD('busy', `Traffic detected on ${nextCh.name}`);
     }
   }
 
@@ -1193,7 +1250,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (iconSpeaker) {
         iconSpeaker.innerHTML = `<line x1="1" y1="1" x2="23" y2="23"></line><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>`;
       }
-      showHUD('🔇', 'Audio Muted');
+      showHUD('mute', 'Audio Muted');
       setLcdStatus('AUDIO MUTED [M]');
     } else {
       const restoreVol = previousVolume > 0 ? previousVolume : 0.8;
@@ -1207,7 +1264,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (iconSpeaker) {
         iconSpeaker.innerHTML = `<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>`;
       }
-      showHUD('🔊', `Audio Unmuted (${Math.round(restoreVol * 100)}%)`);
+      showHUD('unmute', `Audio Unmuted (${Math.round(restoreVol * 100)}%)`);
       setLcdStatus('AUDIO UNMUTED [M]');
     }
     setTimeout(() => { if (!isTransmitting && !isReceiving) setLcdStatus('STANDBY'); }, 1500);
@@ -1240,7 +1297,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnRadioPing) {
     btnRadioPing.addEventListener('click', () => {
       sendPing(true);
-      showHUD('📡', 'Testing Network RTT Ping...');
+      showHUD('ping', 'Testing Network RTT Ping...');
     });
   }
 
@@ -1248,7 +1305,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnReplay) {
     btnReplay.addEventListener('click', () => {
       audioEngine.replayLastTransmission();
-      showHUD('🔁', 'Replaying Transmission');
+      showHUD('replay', 'Replaying Transmission');
     });
   }
 
@@ -1257,14 +1314,14 @@ document.addEventListener('DOMContentLoaded', () => {
     btnAlert.addEventListener('click', () => {
       soundFX.playCallAlertTone();
       triggerHaptic([100, 50, 100, 50, 200]);
-      showHUD('🚨', 'Emergency Siren Broadcast');
-      setLcdStatus('🚨 EMERGENCY ALERT SENT');
+      showHUD('siren', 'Emergency Siren Broadcast');
+      setLcdStatus('EMERGENCY ALERT SENT');
       const ch = channels.find(c => c.id === currentChannelID);
       addActivityLog({
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
         callsign: myCallsign,
         channelName: ch ? ch.name : `CH ${currentChannelID}`,
-        text: `🚨 Emergency 1750Hz Siren Alert Broadcast`,
+        text: `Emergency 1750Hz Siren Alert Broadcast`,
         type: 'alert',
       });
       if (ws && ws.readyState === WebSocket.OPEN) {
@@ -1280,14 +1337,14 @@ document.addEventListener('DOMContentLoaded', () => {
   if (pingPill) {
     pingPill.addEventListener('click', () => {
       sendPing(true);
-      showHUD('📡', 'Testing Network RTT Ping...');
+      showHUD('ping', 'Testing Network RTT Ping...');
     });
   }
 
   if (btnModalPingTest) {
     btnModalPingTest.addEventListener('click', () => {
       sendPing(true);
-      showHUD('📡', 'Testing Network RTT Ping...');
+      showHUD('ping', 'Testing Network RTT Ping...');
     });
   }
 
@@ -1318,7 +1375,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'p' || e.key === 'P') {
       e.preventDefault();
       sendPing(true);
-      showHUD('📡', 'Testing Network RTT Ping...');
+      showHUD('ping', 'Testing Network RTT Ping...');
       return;
     }
 
@@ -1326,7 +1383,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'r' || e.key === 'R') {
       e.preventDefault();
       audioEngine.replayLastTransmission();
-      showHUD('🔁', 'Replaying Transmission');
+      showHUD('replay', 'Replaying Transmission');
       return;
     }
 
@@ -2033,7 +2090,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ${distStr ? `<div class="map-popup-row"><span class="label">LOS Distance:</span><span class="val" style="color: #10b981;">${distStr}</span></div>` : ''}
             ${bearingStr ? `<div class="map-popup-row"><span class="label">Bearing:</span><span class="val" style="color: #38bdf8;">${bearingStr}</span></div>` : ''}
           </div>
-          ${ch.id !== currentChannelID ? `<button type="button" class="map-popup-btn" onclick="window.radioChangeChannel(${ch.id})">📻 Tune to Channel</button>` : `<div style="text-align: center; font-size: 11px; color: #10b981; font-weight: 700;">CURRENT CHANNEL</div>`}
+          ${ch.id !== currentChannelID ? `<button type="button" class="map-popup-btn" onclick="window.radioChangeChannel(${ch.id})"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:-1px;"><rect x="5" y="9" width="14" height="12" rx="2"/><path d="M9 9V5a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v4"/><circle cx="12" cy="15" r="2"/></svg>Tune to Channel</button>` : `<div style="text-align: center; font-size: 11px; color: #10b981; font-weight: 700;">CURRENT CHANNEL</div>`}
         </div>
       `;
 
@@ -2077,7 +2134,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="map-popup-rows">
             <div class="map-popup-row"><span class="label">Location:</span><span class="val">${myLocation.latitude.toFixed(4)}°, ${myLocation.longitude.toFixed(4)}°</span></div>
             <div class="map-popup-row"><span class="label">Precision:</span><span class="val">±${Math.round(myLocation.accuracy || 10)}m</span></div>
-            <div class="map-popup-row"><span class="label">Battery:</span><span class="val" style="color: #10b981;">100% 🔋</span></div>
+            <div class="map-popup-row"><span class="label">Battery:</span><span class="val" style="color: #10b981;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:-2px;"><rect x="1" y="6" width="18" height="12" rx="2"/><line x1="23" y1="11" x2="23" y2="13"/></svg>100%</span></div>
             <div class="map-popup-row"><span class="label">Status:</span><span class="val" style="color: #10b981;">Online & Tuned</span></div>
           </div>
         </div>
@@ -2130,10 +2187,10 @@ document.addEventListener('DOMContentLoaded', () => {
               <div class="map-popup-row"><span class="label">Coordinates:</span><span class="val">${loc.latitude.toFixed(4)}°, ${loc.longitude.toFixed(4)}°</span></div>
               ${distStr ? `<div class="map-popup-row"><span class="label">Distance:</span><span class="val" style="color: #38bdf8;">${distStr}</span></div>` : ''}
               ${bearingStr ? `<div class="map-popup-row"><span class="label">Bearing:</span><span class="val" style="color: #10b981;">${bearingStr}</span></div>` : ''}
-              <div class="map-popup-row"><span class="label">Signal:</span><span class="val" style="color: #10b981;">📶 5/5 (-68 dBm)</span></div>
+              <div class="map-popup-row"><span class="label">Signal:</span><span class="val" style="color: #10b981;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:-2px;"><path d="M2 20h2M7 16v4M12 12v8M17 8v12M22 4v16"/></svg>5/5 (-68 dBm)</span></div>
               <div class="map-popup-row"><span class="label">Channel:</span><span class="val">CH ${currentChannelID}</span></div>
             </div>
-            <button type="button" class="map-popup-btn" onclick="document.getElementById('chat-drawer').classList.add('open');">💬 Open Chat</button>
+            <button type="button" class="map-popup-btn" onclick="document.getElementById('chat-drawer').classList.add('open');"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:-2px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Open Chat</button>
           </div>
         `;
 
@@ -2314,7 +2371,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     } else {
       acquireUserLocation();
-      showHUD('📍', 'Acquiring GPS fix...');
+      showHUD('gps', 'Acquiring GPS fix...');
     }
   }
 
@@ -2685,10 +2742,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const sendBtn = document.getElementById('btn-chat-send');
 
       // Initialize UI for active upload
+      const lightningSvg = `<svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" style="margin-right:3px;vertical-align:-1px;"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>`;
       if (progressContainer) progressContainer.style.display = 'flex';
       if (speedBadge) {
         speedBadge.style.display = 'inline-block';
-        speedBadge.textContent = '⚡ 0 KB/s';
+        speedBadge.innerHTML = `${lightningSvg}0 KB/s`;
       }
       if (percentBadge) {
         percentBadge.style.display = 'inline-block';
@@ -2706,7 +2764,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await uploadFileWithProgress(file, (p) => {
           if (progressFill) progressFill.style.width = `${p.percent}%`;
           if (percentBadge) percentBadge.textContent = `${p.percent}%`;
-          if (speedBadge) speedBadge.textContent = `⚡ ${p.speedStr}`;
+          if (speedBadge) speedBadge.innerHTML = `${lightningSvg}${p.speedStr}`;
           if (sizeStats) sizeStats.textContent = `${p.loadedStr} / ${p.totalStr}`;
           if (etaStats) etaStats.textContent = p.etaStr;
           if (previewName) previewName.textContent = `Sending ${file.name} (${p.percent}%)`;
@@ -2802,8 +2860,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const fileName = payload.file_name || payload.FileName || '';
       const summaryText = rawText 
         ? (rawText.length > 28 ? rawText.substring(0, 28) + '...' : rawText)
-        : (fileName ? `📎 ${fileName}` : '📎 Attachment');
-      showHUD('💬', `${payload.callsign || payload.Callsign || 'UNIT'}: "${summaryText}"`);
+        : (fileName ? fileName : 'Attachment');
+      showHUD('chat', `${payload.callsign || payload.Callsign || 'UNIT'}: "${summaryText}"`);
     }
   }
 
@@ -2817,7 +2875,10 @@ document.addEventListener('DOMContentLoaded', () => {
       if (messages.length === 0) {
         chatMessagesList.innerHTML = `
           <div class="chat-empty-state">
-            <span>💬 No messages on this channel yet.<br>Send a tactical message or tap a quick chip.</span>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="opacity: 0.45; margin-bottom: 8px;">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+            <span>No messages on this channel yet.<br>Send a tactical message or tap a quick chip.</span>
           </div>
         `;
       } else {
@@ -2838,7 +2899,7 @@ document.addEventListener('DOMContentLoaded', () => {
     bubble.className = 'chat-bubble ' + (isMe ? 'sent' : 'received');
 
     const d = new Date(payload.timestamp || Date.now());
-    const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const timeStr = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
     let attachmentHTML = '';
     const fileUrl = payload.file_url || payload.FileUrl;
@@ -2883,13 +2944,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const rawText = payload.text || payload.Text || '';
     const textHTML = rawText ? `<div class="chat-bubble-content">${escapeHtml(rawText)}</div>` : '';
 
+    const author = payload.callsign || payload.Callsign || 'UNIT';
+    const tgDoubleCheck = `<svg class="tg-check-icon" width="15" height="11" viewBox="0 0 16 12" fill="none"><path d="M1 6.5L5 10.5L15 1.5M5.5 6.5L9.5 10.5M10.5 1.5L5.5 6.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+
+    let authorColor = '#5288c1';
+    if (!isMe) {
+      const colors = ['#5288c1', '#e57373', '#4dd0e1', '#aed581', '#ba68c8', '#ffb74d', '#4db6ac', '#f06292'];
+      let hash = 0;
+      for (let i = 0; i < author.length; i++) hash = author.charCodeAt(i) + ((hash << 5) - hash);
+      authorColor = colors[Math.abs(hash) % colors.length];
+    }
+
     bubble.innerHTML = `
-      <div class="chat-bubble-header">
-        <span class="chat-bubble-callsign">${escapeHtml(payload.callsign || payload.Callsign || 'UNIT')}</span>
-        <span class="chat-bubble-time">${timeStr}</span>
-      </div>
+      ${!isMe ? `<div class="chat-bubble-author" style="color: ${authorColor};">${escapeHtml(author)}</div>` : ''}
       ${textHTML}
       ${attachmentHTML}
+      <div class="chat-bubble-meta">
+        <span class="chat-bubble-time">${timeStr}</span>
+        ${isMe ? `<span class="tg-bubble-check">${tgDoubleCheck}</span>` : ''}
+      </div>
     `;
 
     chatMessagesList.appendChild(bubble);
@@ -3100,14 +3173,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const stream = await acquireCameraStream();
     if (stream) {
       await switchStream(stream, false);
-      showHUD('📹', 'Starting Video Broadcast on CH ' + currentChannelID);
+      showHUD('video', 'Starting Video Broadcast on CH ' + currentChannelID);
     } else {
       localVideoStream = null;
       if (localVideo) {
         localVideo.srcObject = null;
         localVideo.style.display = 'none';
       }
-      showHUD('👁️', 'Video Room Joined (Viewer Mode - No Camera Detected)', 4000);
+      showHUD('video', 'Video Room Joined (Viewer Mode - No Camera Detected)', 4000);
     }
 
     isVideoCallActive = true;
@@ -3147,7 +3220,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function startScreenShare() {
     if (!navigator.mediaDevices || !navigator.mediaDevices.getDisplayMedia) {
-      showHUD('⚠️', 'Screen sharing is not supported by your browser');
+      showHUD('screen', 'Screen sharing is not supported by your browser');
       return;
     }
 
@@ -3196,7 +3269,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (videoStatusText) videoStatusText.textContent = 'Broadcasting Screen Feed...';
 
       soundFX.playVideoCallChime();
-      showHUD('🖥️', 'Sharing Screen to CH ' + currentChannelID, 3500);
+      showHUD('screen', 'Sharing Screen to CH ' + currentChannelID, 3500);
 
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
@@ -3234,7 +3307,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const ch = channels.find(c => c.id === currentChannelID);
       if (videoChName && ch) videoChName.textContent = `${ch.name} - VIDEO`;
       if (videoStatusText) videoStatusText.textContent = 'Broadcasting Camera Feed...';
-      showHUD('🖥️', 'Screen Share ended - Switched to Camera');
+      showHUD('screen', 'Screen Share ended - Switched to Camera');
     } else {
       if (localVideoStream) {
         localVideoStream.getTracks().forEach(t => t.stop());
@@ -3249,7 +3322,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const ch = channels.find(c => c.id === currentChannelID);
       if (videoChName && ch) videoChName.textContent = `${ch.name} - VIEWER`;
       if (videoStatusText) videoStatusText.textContent = 'Awaiting Video Carrier...';
-      showHUD('🖥️', 'Screen Share stopped (Viewer Mode)');
+      showHUD('screen', 'Screen Share stopped (Viewer Mode)');
     }
   }
 
@@ -3318,7 +3391,7 @@ document.addEventListener('DOMContentLoaded', () => {
           },
         }));
       }
-      showHUD('📹', 'Video Call Ended');
+      showHUD('video', 'Video Call Ended');
     }
   }
 
@@ -3331,7 +3404,7 @@ document.addEventListener('DOMContentLoaded', () => {
       if (btnVideoCamToggle) {
         btnVideoCamToggle.classList.toggle('cam-muted', isCameraMuted);
       }
-      showHUD('📹', isCameraMuted ? 'Camera Muted' : 'Camera Active');
+      showHUD('camera', isCameraMuted ? 'Camera Muted' : 'Camera Active');
     }
   }
 
@@ -3342,7 +3415,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const devices = await navigator.mediaDevices.enumerateDevices().catch(() => []);
       const videoDevices = devices.filter(d => d.kind === 'videoinput');
       if (videoDevices.length <= 1) {
-        showHUD('ℹ️', 'Only 1 camera available on device');
+        showHUD('camera', 'Only 1 camera available on device');
         return;
       }
     } catch (e) {}
@@ -3361,11 +3434,11 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       switchStream(newStream);
-      showHUD('🔄', `Camera: ${videoFacingMode === 'user' ? 'Front' : 'Rear'}`);
+      showHUD('camera', `Camera: ${videoFacingMode === 'user' ? 'Front' : 'Rear'}`);
     } catch (err) {
       console.warn('[Video] Flip camera failed:', err);
       videoFacingMode = prevFacing;
-      showHUD('⚠️', 'Camera switch not available');
+      showHUD('camera', 'Camera switch not available');
     }
   }
 
@@ -3396,7 +3469,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (senderID !== myClientID && caller !== myCallsign) {
       soundFX.playVideoCallChime();
       const actionText = isScreen ? 'is sharing Screen' : 'started Video Call';
-      showHUD('📹', `${caller} ${actionText} [Tap Video]`, 5000);
+      showHUD('video', `${caller} ${actionText} [Tap Video]`, 5000);
 
       // If we are currently in the video room, connect with this broadcaster using deterministic tie-breaker!
       if (isVideoCallActive && (!peerConnection || peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed')) {
@@ -3496,7 +3569,7 @@ document.addEventListener('DOMContentLoaded', () => {
     peerConnection.onconnectionstatechange = () => {
       console.log('[WebRTC] Connection state:', peerConnection.connectionState);
       if (peerConnection.connectionState === 'connected') {
-        showHUD('📹', isScreenSharing ? 'Screen Share Connected' : 'Video Connected');
+        showHUD(isScreenSharing ? 'screen' : 'video', isScreenSharing ? 'Screen Share Connected' : 'Video Connected');
       } else if (peerConnection.connectionState === 'disconnected' || peerConnection.connectionState === 'failed') {
         if (targetID === currentVideoPeerID) currentVideoPeerID = null;
         if (remoteVideo) remoteVideo.classList.remove('active');
@@ -3650,7 +3723,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     currentVideoPeerID = null;
     pendingIceCandidates = [];
-    showHUD('📹', `${payload.callsign || 'Peer'} ended video`);
+    showHUD('video', `${payload.callsign || 'Peer'} ended video`);
   }
 
   // Video UI Event Listeners
