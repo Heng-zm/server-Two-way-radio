@@ -4,6 +4,92 @@ A real-time, low-latency, multi-channel **Two-Way Radio (Push-To-Talk / Walkie-T
 
 ---
 
+## System Architecture
+
+```mermaid
+flowchart TD
+    subgraph Clients["Field Clients & Terminals"]
+        BrowserA["Desktop Browser / Mobile Client<br/>(Callsign: ALPHA-1)"]
+        BrowserB["Tactical Field Terminal<br/>(Callsign: BRAVO-2)"]
+        HardwareRoIP["Hardware Transceiver / ESP32<br/>(RoIP UDP Client)"]
+    end
+
+    subgraph Ingress["Ingress & Edge Routing"]
+        Cloudflare["Cloudflare Edge Tunnel<br/>(HTTPS & WSS Secure Proxy)"]
+        DirectPort["Direct Port Listener<br/>(TCP 8080 / UDP 5005)"]
+    end
+
+    subgraph GoServer["Go Two-Way Radio Server Engine"]
+        HTTPRouter["HTTP & Static Asset Server<br/>(//go:embed HTML / CSS / JS)"]
+        WSHub["WebSocket Client Hub<br/>(Signaling & Audio Router)"]
+        FloorController["Channel Floor Controller<br/>(Half-Duplex Mutex & TOT Engine)"]
+        RoIPEngine["RoIP UDP Bridge<br/>(Hardware Audio Gateway)"]
+        UploadStorage["Media Storage Engine<br/>(/api/upload & Static Store)"]
+    end
+
+    subgraph RealTimeP2P["Real-Time Peer Mesh"]
+        WebRTC["WebRTC Video & Screen Share Mesh"]
+    end
+
+    BrowserA <-->|WSS / HTTPS| Cloudflare
+    BrowserB <-->|HTTP / WS| DirectPort
+    HardwareRoIP <-->|Raw UDP Audio Packets| DirectPort
+
+    Cloudflare --> HTTPRouter
+    Cloudflare --> WSHub
+    DirectPort --> HTTPRouter
+    DirectPort --> WSHub
+    DirectPort --> RoIPEngine
+
+    WSHub <--> FloorController
+    RoIPEngine <--> FloorController
+    HTTPRouter --> UploadStorage
+
+    BrowserA <.-.->|P2P Tactical Video Stream| WebRTC
+    BrowserB <.-.->|P2P Tactical Video Stream| WebRTC
+```
+
+---
+
+## Half-Duplex Floor Control & PTT Sequence
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor A as Field Unit A (ALPHA-1)
+    participant Hub as Go Radio Hub / Channel Arbiter
+    actor B as Field Unit B (BRAVO-2)
+
+    Note over Hub: Channel Status: IDLE (Unkeyed)
+
+    A->>Hub: WS: {"type": "ptt_down", "channel": 1}
+    activate Hub
+    Hub->>Hub: Check Mutex Lock (Channel 1 is Free)
+    Hub-->>A: WS: {"type": "tx_granted"} (Red TX LED Active)
+    Hub-->>B: WS: {"type": "rx_active", "speaker": "ALPHA-1"} (Green RX LED Active)
+    Note over A,B: Unit A holds the floor. TOT countdown starts (default: 60s).
+
+    loop Live Voice Transmission
+        A->>Hub: Binary Opus Audio Packets (8-byte header + payload)
+        Hub->>B: Broadcast Audio Stream to Channel Subscribers
+    end
+
+    Note over B: Unit B presses PTT simultaneously
+    B->>Hub: WS: {"type": "ptt_down", "channel": 1}
+    Hub-->>B: WS: {"type": "channel_busy", "speaker": "ALPHA-1"}
+    Note over B: Unit B plays Channel Busy Bonk Tone (Transmission Denied)
+
+    A->>Hub: WS: {"type": "ptt_up", "channel": 1}
+    deactivate Hub
+    Hub->>Hub: Release Mutex Lock & Reset TOT Timer
+    Hub-->>A: WS: {"type": "tx_released"}
+    Hub-->>B: WS: {"type": "roger_beep_event"}
+    Note over B: Web Audio synthesizes Motorola Roger Beep + Squelch Tail Crash
+    Note over Hub: Channel Status: IDLE
+```
+
+---
+
 ## Key Features
 
 ### Tactical Voice Communications
