@@ -22,6 +22,8 @@ class RadioAudioEngine {
 
     // Transmission state
     this.isTransmitting = false;
+    this.isPreBuffering = false;
+    this.preBufferQueue = [];
     this.currentChannel = 1;
     this.seqCounter = 0;
     this.isFirstChunk = true;
@@ -189,7 +191,7 @@ class RadioAudioEngine {
       this.scriptProcessor = this.audioCtx.createScriptProcessor(bufferSize, 1, 1);
 
       this.scriptProcessor.onaudioprocess = (e) => {
-        if (!this.isTransmitting) return;
+        if (!this.isTransmitting && !this.isPreBuffering) return;
 
         const inputChannelData = e.inputBuffer.getChannelData(0);
         const inputRate = this.audioCtx.sampleRate;
@@ -233,19 +235,28 @@ class RadioAudioEngine {
     }
   }
 
-  _flushPCMPacket() {
+  _flushPCMPacket(isLast = false) {
     this.seqCounter++;
     let flags = 0;
     if (this.isFirstChunk) {
       flags |= 0x01; // FlagAudioFirst
       this.isFirstChunk = false;
     }
+    if (isLast) {
+      flags |= 0x02; // FlagAudioLast
+    }
 
     const payloadBytes = new Uint8Array(this.pcmBuffer.buffer);
     const packet = this._buildAudioPacket(this.currentChannel, flags, this.seqCounter, payloadBytes);
 
-    if (this.sendPacket) {
-      this.sendPacket(packet);
+    if (this.isTransmitting) {
+      if (this.sendPacket) {
+        this.sendPacket(packet);
+      }
+    } else if (this.isPreBuffering) {
+      if (this.preBufferQueue.length < 15) {
+        this.preBufferQueue.push(packet);
+      }
     }
 
     this.pcmBufferIndex = 0;
@@ -267,6 +278,40 @@ class RadioAudioEngine {
     return packet.buffer;
   }
 
+  // Pre-buffer audio as soon as user begins "Hold to speak" so zero initial syllables are lost
+  async startPreBuffering(channelID) {
+    this.ensureContext();
+    this.currentChannel = channelID;
+    this.isPreBuffering = true;
+    this.preBufferQueue = [];
+    this.pcmBufferIndex = 0;
+    this.seqCounter = 0;
+    this.isFirstChunk = true;
+
+    try {
+      await this.requestMic();
+    } catch (e) {
+      console.warn('[Audio] Mic request failed:', e);
+    }
+  }
+
+  // Confirm transmission once floor is granted: flush pre-buffered audio and stream live
+  confirmTransmission() {
+    this.isPreBuffering = false;
+    this.isTransmitting = true;
+
+    if (this.preBufferQueue && this.preBufferQueue.length > 0) {
+      for (const packet of this.preBufferQueue) {
+        if (this.sendPacket) {
+          this.sendPacket(packet);
+        }
+      }
+      this.preBufferQueue = [];
+    }
+
+    this._ensureVULoop();
+  }
+
   // Start transmitting audio on granted channel
   async startTransmission(channelID) {
     await this.requestMic();
@@ -279,12 +324,22 @@ class RadioAudioEngine {
     this._ensureVULoop();
   }
 
-  // Stop transmitting
+  // Stop transmitting on release: flush trailing packet with FlagAudioLast
   stopTransmission() {
-    if (this.isTransmitting && this.pcmBufferIndex > 0) {
-      // Flush any trailing samples
-      this._flushPCMPacket();
+    this.isPreBuffering = false;
+    if (this.isTransmitting) {
+      if (this.pcmBufferIndex > 0) {
+        this._flushPCMPacket(true);
+      } else {
+        this.seqCounter++;
+        const dummyPayload = new Uint8Array(2);
+        const lastPacket = this._buildAudioPacket(this.currentChannel, 0x02, this.seqCounter, dummyPayload);
+        if (this.sendPacket) {
+          this.sendPacket(lastPacket);
+        }
+      }
     }
+    this.preBufferQueue = [];
     this.isTransmitting = false;
   }
 

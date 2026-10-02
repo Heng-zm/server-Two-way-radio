@@ -224,7 +224,7 @@
           <div class="voice-orb-halo" id="voice-orb-halo"></div>
           <div class="voice-orb-ripple voice-orb-ripple-1" id="orb-ripple-1"></div>
           <div class="voice-orb-ripple voice-orb-ripple-2" id="orb-ripple-2"></div>
-          <button class="voice-orb" id="btn-ptt" title="Push to Talk (Spacebar or Click)">
+          <button class="voice-orb" id="btn-ptt" title="Hold to speak, release to send (Spacebar or Mouse)">
             <div class="voice-orb-core">
               <div class="mic-wave-icon" id="mic-icon-svg">
                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -239,7 +239,7 @@
 
         <!-- State Text (Listening / Transmitting / Standby) -->
         <div class="voice-state-title" id="lcd-status">STANDBY</div>
-        <div class="voice-hint-text" id="voice-hint">[ Hold Spacebar or tap Orb to speak ]</div>
+        <div class="voice-hint-text" id="voice-hint">[ Hold to speak, release to send ]</div>
 
         <!-- Sleek Audio Wave Visualizer Canvas (ChatGPT Fluid Wave) -->
         <div class="voice-visualizer-bar">
@@ -609,7 +609,14 @@
           </svg>
         </button>
         <input type="text" id="chat-input-text" class="chat-input tg-chat-input" placeholder="Write a message..." maxlength="300" autocomplete="off">
-        <button type="submit" class="chat-send-btn tg-send-btn" id="btn-chat-send" title="Send Message (Enter)">
+        <button type="button" class="chat-voice-btn tg-voice-btn" id="btn-chat-voice" title="Hold to speak, release to send">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+            <line x1="12" y1="19" x2="12" y2="22"></line>
+          </svg>
+        </button>
+        <button type="submit" class="chat-send-btn tg-send-btn" id="btn-chat-send" title="Send Message (Enter)" style="display: none;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
             <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"></path>
           </svg>

@@ -1,16 +1,23 @@
 package radio
 
 import (
+	"crypto/subtle"
 	"encoding/json"
 	"fmt"
 	"log"
 	"math/rand"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"twowayradio/internal/config"
 )
+
+// RoIPRelayFunc is a callback for relaying audio packets to external RoIP UDP gateways.
+type RoIPRelayFunc func(channelID int, data []byte)
 
 // Hub manages all radio channels, connected clients, floor arbitration, and audio dispatching.
 type Hub struct {
@@ -22,6 +29,11 @@ type Hub struct {
 	chatHistory          map[int][]ChatMessagePayload
 	activeVideoByChannel map[int]*VideoSignalingPayload
 	startTime            time.Time
+	roipRelay            RoIPRelayFunc
+	recorder             *AudioRecorder
+	totalAudioBytes      uint64
+	totalTransmissions   uint64
+	totalPreemptions     uint64
 }
 
 // NewHub initializes a new radio hub with configured channels.
@@ -34,6 +46,7 @@ func NewHub(cfg *config.Config) *Hub {
 		chatHistory:          make(map[int][]ChatMessagePayload),
 		activeVideoByChannel: make(map[int]*VideoSignalingPayload),
 		startTime:            time.Now(),
+		recorder:             NewAudioRecorder("./data/recordings"),
 	}
 
 	for _, chDef := range cfg.DefaultChannels {
@@ -159,6 +172,14 @@ func (h *Hub) UnregisterClient(client *Client) {
 				},
 				Timestamp: time.Now().UnixMilli(),
 			})
+			h.BroadcastAll(SignalMessage{
+				Type: MsgTypeChannelActivity,
+				Payload: map[string]interface{}{
+					"channel_id": ch.Definition.ID,
+					"is_busy":    false,
+				},
+				Timestamp: time.Now().UnixMilli(),
+			})
 		}
 	}
 
@@ -237,6 +258,22 @@ func (h *Hub) HandleSignal(client *Client, msg *SignalMessage) {
 		data, _ := json.Marshal(msg.Payload)
 		_ = json.Unmarshal(data, &p)
 		h.handleAlertTone(client, p.ToneType)
+
+	case MsgTypeAllCall:
+		var p AllCallPayload
+		data, _ := json.Marshal(msg.Payload)
+		if err := json.Unmarshal(data, &p); err == nil {
+			p.SenderID = client.ID
+			p.Callsign = client.Callsign
+			p.Role = client.Role
+			p.Timestamp = time.Now().UnixMilli()
+			log.Printf("[Hub] ALL-CALL announcement from %s (%s): %s", client.Callsign, client.Role, p.Text)
+			h.BroadcastAll(SignalMessage{
+				Type:      MsgTypeAllCall,
+				Payload:   p,
+				Timestamp: p.Timestamp,
+			})
+		}
 
 	case MsgTypeLocation:
 		var p LocationPayload
@@ -407,17 +444,29 @@ func (h *Hub) SwitchChannel(client *Client, newChannelID int, password string) {
 	oldCh := h.channels[client.CurrentChannelID]
 	h.mu.RUnlock()
 
-	if !exists || client.CurrentChannelID == newChannelID {
-		return
-	}
-
-	if targetCh.Definition.IsPrivate && targetCh.Definition.Password != password {
+	if !exists {
 		client.SendJSON(SignalMessage{
 			Type:      MsgTypeError,
-			Payload:   "incorrect password for private channel",
+			Payload:   "channel does not exist",
 			Timestamp: time.Now().UnixMilli(),
 		})
 		return
+	}
+
+	if client.CurrentChannelID == newChannelID {
+		return
+	}
+
+	if targetCh.Definition.IsPrivate {
+		// Use constant-time comparison to prevent timing attacks on private channel passwords
+		if subtle.ConstantTimeCompare([]byte(targetCh.Definition.Password), []byte(password)) != 1 {
+			client.SendJSON(SignalMessage{
+				Type:      MsgTypeError,
+				Payload:   "incorrect password for private channel",
+				Timestamp: time.Now().UnixMilli(),
+			})
+			return
+		}
 	}
 
 	// If client is currently transmitting on the old channel, release floor
@@ -532,9 +581,47 @@ func (h *Hub) handlePTTDown(client *Client) {
 		return
 	}
 
-	granted, reason, speaker := ch.RequestFloor(client)
+	granted, reason, speaker, preempted := ch.RequestFloor(client)
 	if granted {
-		log.Printf("[Hub] Floor GRANTED on Channel %d to %s", ch.Definition.ID, client.Callsign)
+		atomic.AddUint64(&h.totalTransmissions, 1)
+
+		// Handle tactical priority preemption (e.g. Commander/Dispatcher interrupts field unit)
+		if preempted != nil {
+			atomic.AddUint64(&h.totalPreemptions, 1)
+			log.Printf("[Hub] Floor PREEMPTED on Channel %d: %s (%s) interrupted %s (%s)",
+				ch.Definition.ID, client.Callsign, client.Role, preempted.Callsign, preempted.Role)
+
+			// Finalize recording for the preempted speaker
+			if h.recorder != nil {
+				if rec := h.recorder.OnTransmissionEnd(ch.Definition.ID); rec != nil {
+					ch.BroadcastSignal(SignalMessage{
+						Type:      MsgTypeTransmissionRecorded,
+						Payload:   rec,
+						Timestamp: time.Now().UnixMilli(),
+					})
+				}
+			}
+
+			// Immediately notify preempted speaker with zero-delay priority
+			preempted.SendPriorityJSON(SignalMessage{
+				Type: MsgTypeFloorStatus,
+				Payload: FloorStatusPayload{
+					ChannelID:      ch.Definition.ID,
+					Status:         FloorStatusDenied,
+					Reason:         "preempted_by_dispatcher",
+					CurrentSpeaker: client.Callsign,
+					SpeakerID:      client.ID,
+				},
+				Timestamp: time.Now().UnixMilli(),
+			})
+		}
+
+		log.Printf("[Hub] Floor GRANTED on Channel %d to %s (%s)", ch.Definition.ID, client.Callsign, client.Role)
+
+		// Start server-side audio recording buffer
+		if h.recorder != nil {
+			h.recorder.OnTransmissionStart(ch.Definition.ID, client)
+		}
 
 		// Confirm to speaker immediately with zero-lag priority
 		client.SendPriorityJSON(SignalMessage{
@@ -596,6 +683,38 @@ func (h *Hub) handlePTTUp(client *Client) {
 	if ch.ReleaseFloor(client) {
 		log.Printf("[Hub] Floor RELEASED on Channel %d by %s", ch.Definition.ID, client.Callsign)
 
+		// Finalize recording and save standard 16kHz WAV file
+		if h.recorder != nil {
+			if rec := h.recorder.OnTransmissionEnd(ch.Definition.ID); rec != nil {
+				log.Printf("[Hub] Saved WAV recording: %s (%.1fs)", rec.FileURL, rec.DurationSeconds)
+				ch.BroadcastSignal(SignalMessage{
+					Type:      MsgTypeTransmissionRecorded,
+					Payload:   rec,
+					Timestamp: time.Now().UnixMilli(),
+				})
+
+				// Append to channel chat history as voice message
+				h.mu.Lock()
+				hist := h.chatHistory[ch.Definition.ID]
+				hist = append(hist, ChatMessagePayload{
+					ID:        rec.ID,
+					ChannelID: ch.Definition.ID,
+					SenderID:  client.ID,
+					Callsign:  client.Callsign,
+					Text:      fmt.Sprintf("🎙️ Voice Transmission (%.1fs)", rec.DurationSeconds),
+					FileUrl:   rec.FileURL,
+					FileName:  filepath.Base(rec.FileURL),
+					FileType:  "audio/wav",
+					Timestamp: rec.Timestamp,
+				})
+				if len(hist) > 30 {
+					hist = hist[len(hist)-30:]
+				}
+				h.chatHistory[ch.Definition.ID] = hist
+				h.mu.Unlock()
+			}
+		}
+
 		// Broadcast floor is now idle
 		ch.BroadcastSignal(SignalMessage{
 			Type: MsgTypeFloorStatus,
@@ -649,6 +768,17 @@ func (h *Hub) handleAlertTone(client *Client, toneType string) {
 }
 
 func (h *Hub) handleTOTExpired(ch *Channel, speaker *Client) {
+	// Finalize recording if active
+	if h.recorder != nil {
+		if rec := h.recorder.OnTransmissionEnd(ch.Definition.ID); rec != nil {
+			ch.BroadcastSignal(SignalMessage{
+				Type:      MsgTypeTransmissionRecorded,
+				Payload:   rec,
+				Timestamp: time.Now().UnixMilli(),
+			})
+		}
+	}
+
 	// Notify speaker that timeout occurred
 	speaker.SendJSON(SignalMessage{
 		Type: MsgTypeFloorStatus,
@@ -693,18 +823,23 @@ func (h *Hub) handleTOTExpired(ch *Channel, speaker *Client) {
 }
 
 // BroadcastAll sends a SignalMessage to all connected clients across all channels.
+// Marshals JSON once to save CPU on small servers with multiple connections.
 func (h *Hub) BroadcastAll(msg SignalMessage) {
+	data, err := json.Marshal(msg)
+	if err != nil {
+		return
+	}
 	h.mu.RLock()
 	defer h.mu.RUnlock()
 	for client := range h.clients {
-		client.SendJSON(msg)
+		client.SendRawJSON(data)
 	}
 }
 
 // HandleBinaryAudio validates floor permission and dispatches audio to channel listeners.
 // Uses stack-allocated header parsing for zero GC allocations.
 func (h *Hub) HandleBinaryAudio(client *Client, data []byte) {
-	channelID, _, _, _, err := ParseAudioHeaderQuick(data)
+	channelID, flags, _, _, err := ParseAudioHeaderQuick(data)
 	if err != nil {
 		return
 	}
@@ -723,8 +858,54 @@ func (h *Hub) HandleBinaryAudio(client *Client, data []byte) {
 		return
 	}
 
-	// Fan out audio to all other listeners on this channel
-	ch.BroadcastAudio(client, data)
+	// Update audio throughput metrics
+	atomic.AddUint64(&h.totalAudioBytes, uint64(len(data)))
+
+	// Append raw PCM data to active server-side recording buffer
+	if h.recorder != nil && len(data) > AudioHeaderSize {
+		h.recorder.AppendAudio(targetChID, data[AudioHeaderSize:])
+	}
+
+	// Fleet-wide All-Call broadcast for Dispatchers/Commanders if flagged
+	if flags&FlagAudioAllCall != 0 {
+		h.mu.RLock()
+		for _, c := range h.channels {
+			c.BroadcastAudio(client, data)
+		}
+		h.mu.RUnlock()
+	} else {
+		// Fan out audio to all other listeners on this channel
+		ch.BroadcastAudio(client, data)
+	}
+
+	// Relay audio to external RoIP gateways if configured
+	h.mu.RLock()
+	relay := h.roipRelay
+	h.mu.RUnlock()
+	if relay != nil {
+		relay(targetChID, data)
+	}
+}
+
+// SetRoIPRelay registers a callback to dispatch outgoing radio audio to external RoIP gateways.
+func (h *Hub) SetRoIPRelay(relay RoIPRelayFunc) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	h.roipRelay = relay
+}
+
+// HandleRoIPAudio injects audio received from an external RoIP UDP device directly into a channel.
+func (h *Hub) HandleRoIPAudio(channelID int, data []byte) {
+	h.mu.RLock()
+	ch, exists := h.channels[channelID]
+	h.mu.RUnlock()
+
+	if !exists || ch == nil {
+		return
+	}
+
+	// Dispatch to all subscribers in this channel (sender is nil so all clients hear it)
+	ch.BroadcastAudio(nil, data)
 }
 
 func (h *Hub) broadcastUserList(ch *Channel) {
@@ -774,6 +955,52 @@ func (h *Hub) GetChannelList() []ChannelInfo {
 	return list
 }
 
+// GetRecordings returns recorded audio transmissions from the server-side archive.
+func (h *Hub) GetRecordings(channelID int) []VoiceRecording {
+	if h.recorder == nil {
+		return nil
+	}
+	return h.recorder.GetRecordings(channelID)
+}
+
+// GetMetrics returns detailed runtime statistics, throughput, and performance metrics.
+func (h *Hub) GetMetrics() map[string]interface{} {
+	h.mu.RLock()
+	totalClients := len(h.clients)
+	channelsCount := len(h.channels)
+	h.mu.RUnlock()
+
+	var mem runtime.MemStats
+	runtime.ReadMemStats(&mem)
+
+	uptime := time.Since(h.startTime)
+
+	return map[string]interface{}{
+		"server": map[string]interface{}{
+			"version":    "2.4.0-enterprise",
+			"uptime":     uptime.String(),
+			"uptime_sec": int64(uptime.Seconds()),
+			"go_version": runtime.Version(),
+			"goroutines": runtime.NumGoroutine(),
+			"cpu_cores":  runtime.NumCPU(),
+		},
+		"radio": map[string]interface{}{
+			"active_clients":      totalClients,
+			"channels_count":      channelsCount,
+			"total_transmissions": atomic.LoadUint64(&h.totalTransmissions),
+			"total_preemptions":   atomic.LoadUint64(&h.totalPreemptions),
+			"total_audio_bytes":   atomic.LoadUint64(&h.totalAudioBytes),
+			"total_audio_mb":      fmt.Sprintf("%.2f MB", float64(atomic.LoadUint64(&h.totalAudioBytes))/(1024*1024)),
+		},
+		"memory": map[string]interface{}{
+			"alloc_mb":       fmt.Sprintf("%.2f MB", float64(mem.Alloc)/(1024*1024)),
+			"total_alloc_mb": fmt.Sprintf("%.2f MB", float64(mem.TotalAlloc)/(1024*1024)),
+			"sys_mb":         fmt.Sprintf("%.2f MB", float64(mem.Sys)/(1024*1024)),
+			"num_gc":         mem.NumGC,
+		},
+	}
+}
+
 // GetStatus returns server metrics.
 func (h *Hub) GetStatus() map[string]interface{} {
 	h.mu.RLock()
@@ -794,8 +1021,11 @@ func (h *Hub) GetStatus() map[string]interface{} {
 	}
 
 	return map[string]interface{}{
-		"uptime_seconds": int(time.Since(h.startTime).Seconds()),
-		"total_clients":  totalUsers,
-		"channels":       channelsInfo,
+		"uptime_seconds":      int(time.Since(h.startTime).Seconds()),
+		"total_clients":       totalUsers,
+		"channels":            channelsInfo,
+		"total_transmissions": atomic.LoadUint64(&h.totalTransmissions),
+		"total_preemptions":   atomic.LoadUint64(&h.totalPreemptions),
+		"total_audio_bytes":   atomic.LoadUint64(&h.totalAudioBytes),
 	}
 }

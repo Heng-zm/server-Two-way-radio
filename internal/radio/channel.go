@@ -1,7 +1,9 @@
 package radio
 
 import (
+	"encoding/json"
 	"log"
+	"strings"
 	"sync"
 	"time"
 
@@ -63,17 +65,51 @@ func (c *Channel) SubscriberCount() int {
 	return len(c.Subscribers)
 }
 
+// getPriority returns numeric rank for floor arbitration (higher rank preempts lower rank).
+func getPriority(client *Client) int {
+	if client == nil {
+		return 0
+	}
+	role := strings.ToLower(strings.TrimSpace(client.Role))
+	switch role {
+	case "commander", "chief", "admin":
+		return 3
+	case "dispatcher", "supervisor", "operator":
+		return 2
+	default:
+		return 1
+	}
+}
+
 // RequestFloor attempts to acquire the floor for client.
-// Returns true if floor is granted, false if channel is busy or error.
-func (c *Channel) RequestFloor(client *Client) (bool, string, string) {
+// Returns:
+// - granted: true if floor is granted
+// - reason: "channel_busy" or ""
+// - speaker: callsign of speaker
+// - preempted: previous active speaker if preempted by higher priority role, else nil
+func (c *Channel) RequestFloor(client *Client) (bool, string, string, *Client) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	if c.isBusy && c.activeSpeaker != nil {
 		if c.activeSpeaker == client {
-			return true, "", "" // already holding floor
+			return true, "", "", nil // already holding floor
 		}
-		return false, "channel_busy", c.activeSpeaker.Callsign
+
+		// Priority preemption: Dispatcher/Commander interrupts lower priority speaker
+		if getPriority(client) > getPriority(c.activeSpeaker) {
+			preempted := c.activeSpeaker
+			c.cancelTOT()
+			c.activeSpeaker = client
+			if c.totDuration > 0 {
+				c.totTimer = time.AfterFunc(c.totDuration, func() {
+					c.handleTOT()
+				})
+			}
+			return true, "preempted", preempted.Callsign, preempted
+		}
+
+		return false, "channel_busy", c.activeSpeaker.Callsign, nil
 	}
 
 	// Grant floor
@@ -88,7 +124,7 @@ func (c *Channel) RequestFloor(client *Client) (bool, string, string) {
 		})
 	}
 
-	return true, "", ""
+	return true, "", "", nil
 }
 
 // ReleaseFloor releases the floor if held by the given client.
@@ -171,34 +207,37 @@ func (c *Channel) GetSubscribersInfo() []ChannelUserInfo {
 }
 
 // BroadcastSignal sends a signal envelope to all subscribers.
-// Uses snapshot copy to minimize lock hold duration.
+// Encodes JSON once and dispatches pre-marshaled bytes to minimize CPU usage.
 func (c *Channel) BroadcastSignal(msg interface{}) {
-	c.mu.RLock()
-	subscribers := make([]*Client, 0, len(c.Subscribers))
-	for client := range c.Subscribers {
-		subscribers = append(subscribers, client)
+	var data []byte
+	var err error
+	if b, ok := msg.([]byte); ok {
+		data = b
+	} else {
+		data, err = json.Marshal(msg)
+		if err != nil {
+			return
+		}
 	}
-	c.mu.RUnlock()
 
-	for _, client := range subscribers {
-		client.SendJSON(msg)
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+
+	for client := range c.Subscribers {
+		client.SendRawJSON(data)
 	}
 }
 
 // BroadcastAudio distributes binary audio to all subscribers except sender.
-// Uses snapshot copy so high fan-out never holds channel mutex lock.
+// Zero-allocation direct dispatch without heap slices.
 func (c *Channel) BroadcastAudio(sender *Client, audioData []byte) {
 	c.mu.RLock()
-	subscribers := make([]*Client, 0, len(c.Subscribers))
+	defer c.mu.RUnlock()
+
 	for client := range c.Subscribers {
 		if client != sender {
-			subscribers = append(subscribers, client)
+			client.SendBinary(audioData)
 		}
-	}
-	c.mu.RUnlock()
-
-	for _, client := range subscribers {
-		client.SendBinary(audioData)
 	}
 }
 

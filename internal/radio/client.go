@@ -28,7 +28,7 @@ type Client struct {
 	highPri  chan []byte // high priority signaling & pongs (zero buffer delay)
 	send     chan []byte // outgoing messages & audio packets
 	
-	mu       sync.Mutex
+	mu       sync.RWMutex
 	isClosed bool
 }
 
@@ -56,9 +56,14 @@ func (c *Client) SendPriorityJSON(v interface{}) {
 	c.enqueuePriority(data)
 }
 
+// SendPriorityRawJSON enqueues pre-marshaled high priority signal bytes (avoids duplicate JSON encoding).
+func (c *Client) SendPriorityRawJSON(data []byte) {
+	c.enqueuePriority(data)
+}
+
 func (c *Client) enqueuePriority(data []byte) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
 	if c.isClosed {
 		return
@@ -89,14 +94,19 @@ func (c *Client) SendJSON(v interface{}) {
 	c.enqueue(data)
 }
 
+// SendRawJSON enqueues pre-marshaled JSON payload to avoid repeated serialization on broadcasts.
+func (c *Client) SendRawJSON(data []byte) {
+	c.enqueue(data)
+}
+
 // SendBinary enqueues a binary audio slice to be sent. Non-blocking.
 func (c *Client) SendBinary(data []byte) {
 	c.enqueue(data)
 }
 
 func (c *Client) enqueue(data []byte) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	c.mu.RLock()
+	defer c.mu.RUnlock()
 
 	if c.isClosed {
 		return

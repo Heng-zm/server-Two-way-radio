@@ -55,6 +55,127 @@ document.addEventListener('DOMContentLoaded', () => {
   const orbRipple1 = document.getElementById('orb-ripple-1');
   const orbRipple2 = document.getElementById('orb-ripple-2');
   const voiceOrbHalo = document.getElementById('voice-orb-halo');
+  const elVoiceHint = document.getElementById('voice-hint');
+
+  function updateVoiceHint(state) {
+    if (!elVoiceHint) return;
+    if (pttMode === 'toggle') {
+      if (isTransmitting) {
+        elVoiceHint.textContent = '[ On Air • Click Orb to stop ]';
+        elVoiceHint.className = 'voice-hint-text transmitting';
+      } else {
+        elVoiceHint.textContent = '[ Click Orb to speak ]';
+        elVoiceHint.className = 'voice-hint-text';
+      }
+      return;
+    }
+
+    switch (state) {
+      case 'speaking':
+      case 'transmitting':
+        elVoiceHint.textContent = '[ Transmitting... Release to send ]';
+        elVoiceHint.className = 'voice-hint-text transmitting';
+        break;
+      case 'sent':
+        elVoiceHint.textContent = '[ Transmission Sent ✓ ]';
+        elVoiceHint.className = 'voice-hint-text sent';
+        setTimeout(() => {
+          if (!isPTTDown && !isTransmitting) {
+            updateVoiceHint('standby');
+          }
+        }, 1200);
+        break;
+      case 'requesting':
+        elVoiceHint.textContent = '[ Keying up mic... ]';
+        elVoiceHint.className = 'voice-hint-text';
+        break;
+      case 'busy':
+        elVoiceHint.textContent = '[ Channel Busy - Wait for speaker ]';
+        elVoiceHint.className = 'voice-hint-text';
+        break;
+      case 'standby':
+      default:
+        elVoiceHint.textContent = '[ Hold to speak, release to send ]';
+        elVoiceHint.className = 'voice-hint-text';
+        break;
+    }
+  }
+
+  let txStartTime = 0;
+  let txTimerInterval = null;
+
+  function startTxTimer() {
+    if (txTimerInterval) clearInterval(txTimerInterval);
+    txStartTime = Date.now();
+    txTimerInterval = setInterval(() => {
+      const elapsedSec = Math.floor((Date.now() - txStartTime) / 1000);
+      const mm = String(Math.floor(elapsedSec / 60)).padStart(2, '0');
+      const ss = String(elapsedSec % 60).padStart(2, '0');
+      const timeStr = `${mm}:${ss}`;
+
+      if (elLcdStatus && isTransmitting) {
+        elLcdStatus.textContent = `ON AIR [TX ${timeStr}]`;
+      }
+      if (elVoiceHint && isTransmitting) {
+        elVoiceHint.textContent = `[ 🔴 Speaking (${timeStr})... Release to send ]`;
+      }
+    }, 250);
+  }
+
+  function stopTxTimer() {
+    if (txTimerInterval) {
+      clearInterval(txTimerInterval);
+      txTimerInterval = null;
+    }
+    const durationSec = txStartTime ? Math.max(0.3, ((Date.now() - txStartTime) / 1000)).toFixed(1) : '0.0';
+    txStartTime = 0;
+    return durationSec;
+  }
+
+  function addVoiceTransmissionChatBubble(callsign, channelID, durationSec, isSelf) {
+    if (channelID !== currentChannelID || !chatMessagesList) return;
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+    const msgEl = document.createElement('div');
+    msgEl.className = `chat-msg-row ${isSelf ? 'chat-msg-self' : 'chat-msg-other'}`;
+
+    const playBtnSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>`;
+    const micSvg = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:4px;vertical-align:-1px;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>`;
+
+    msgEl.innerHTML = `
+      <div class="chat-msg-bubble voice-msg-bubble">
+        <div class="chat-msg-author">${callsign}</div>
+        <div class="voice-bubble-content">
+          <button type="button" class="voice-bubble-play" title="Replay transmission">
+            ${playBtnSvg}
+          </button>
+          <div class="voice-bubble-waveform">
+            <span class="v-bar" style="height:40%"></span>
+            <span class="v-bar" style="height:70%"></span>
+            <span class="v-bar" style="height:100%"></span>
+            <span class="v-bar" style="height:60%"></span>
+            <span class="v-bar" style="height:85%"></span>
+            <span class="v-bar" style="height:50%"></span>
+            <span class="v-bar" style="height:75%"></span>
+            <span class="v-bar" style="height:35%"></span>
+          </div>
+          <span class="voice-bubble-duration">${micSvg}${durationSec}s</span>
+        </div>
+        <div class="chat-msg-time">${timeStr}</div>
+      </div>
+    `;
+
+    const playBtn = msgEl.querySelector('.voice-bubble-play');
+    if (playBtn) {
+      playBtn.addEventListener('click', () => {
+        audioEngine.replayLastTransmission();
+        showHUD('replay', `Replaying ${callsign}'s transmission`);
+      });
+    }
+
+    chatMessagesList.appendChild(msgEl);
+    chatMessagesList.scrollTop = chatMessagesList.scrollHeight;
+  }
 
   const pingPill = document.getElementById('ping-pill');
   const pingDot = document.getElementById('ping-dot');
@@ -438,47 +559,83 @@ document.addEventListener('DOMContentLoaded', () => {
       case 'video_ice':
         handleVideoICE(payload);
         break;
+
+      case 'transmission_recorded':
+        if (payload.file_url) {
+          appendChatMessage({
+            id: payload.id,
+            channel_id: payload.channel_id,
+            sender_id: payload.speaker_id,
+            callsign: payload.callsign,
+            text: `🎙️ Voice Transmission (${payload.duration_seconds || 0}s)`,
+            file_url: payload.file_url,
+            file_name: (payload.file_url || '').split('/').pop(),
+            file_type: 'audio/wav',
+            timestamp: payload.timestamp || Date.now()
+          });
+        }
+        break;
+
+      case 'all_call':
+        soundFX.playCallTone();
+        showHUD('emergency', `FLEET ALL-CALL: ${payload.callsign || 'DISPATCH'} - ${payload.text || 'Priority Broadcast'}`);
+        setLcdStatus(`ALL-CALL [${payload.callsign || 'HQ'}]`);
+        break;
     }
   }
 
   function handleFloorStatus(payload) {
     const channelID = payload.channel_id ?? payload.ChannelID;
     const status = (payload.status || payload.Status || '').toLowerCase();
+    const reason = (payload.reason || payload.Reason || '').toLowerCase();
     const currentSpeaker = payload.current_speaker || payload.CurrentSpeaker || '';
 
     if (channelID !== currentChannelID) return;
 
     if (status === 'granted') {
+      if (pttMode === 'hold' && !isPTTDown) {
+        // User already released button before server granted floor - immediately release!
+        releaseFloor();
+        return;
+      }
       // Floor granted to us!
       isTransmitting = true;
       elTxLed.classList.add('active');
       btnPtt.classList.add('transmitting');
-      setLcdStatus('TRANSMITTING [TX]');
-      showHUD('tx', 'Floor Granted - You are ON AIR');
+      setLcdStatus('ON AIR [TX 00:00]');
+      showHUD('tx', 'Floor Granted - Release to send');
+      updateVoiceHint('transmitting');
       updateAmbientGlow();
       soundFX.playKeyUpChirp();
 
-      audioEngine.startTransmission(currentChannelID).catch((err) => {
-        alert('Microphone access is required to transmit. Please enable mic permissions in your browser.');
-        releaseFloor();
-      });
+      audioEngine.confirmTransmission();
     } else if (status === 'denied' || status === 'busy') {
       // Channel busy or floor denied
+      stopTxTimer();
       isTransmitting = false;
       isPTTDown = false;
       elTxLed.classList.remove('active');
       btnPtt.classList.remove('active', 'transmitting');
       soundFX.playBusyTone();
-      setLcdStatus(`BUSY (${currentSpeaker || 'OCCUPIED'})`);
-      showHUD('busy', `Channel Busy (${currentSpeaker || 'Occupied'})`);
+
+      if (reason === 'preempted_by_dispatcher' || reason === 'preempted_by_priority') {
+        setLcdStatus('PREEMPTED (PRIORITY OVERRIDE)');
+        showHUD('busy', `Tactical Priority Override by ${currentSpeaker || 'Dispatcher'}!`);
+      } else {
+        setLcdStatus(`BUSY (${currentSpeaker || 'OCCUPIED'})`);
+        showHUD('busy', `Channel Busy (${currentSpeaker || 'Occupied'})`);
+      }
+      updateVoiceHint('busy');
       updateAmbientGlow();
       setTimeout(() => {
         if (!isTransmitting && !isReceiving) {
           setLcdStatus('STANDBY');
+          updateVoiceHint('standby');
         }
       }, 1500);
     } else if (status === 'timeout') {
       // Time-Out-Timer fired
+      stopTxTimer();
       isTransmitting = false;
       isPTTDown = false;
       audioEngine.stopTransmission();
@@ -487,8 +644,12 @@ document.addEventListener('DOMContentLoaded', () => {
       soundFX.playTOTTimeout();
       setLcdStatus('TOT TIMEOUT (MIC RELEASED)');
       showHUD('tot', 'TOT Time Limit - Mic Released');
+      updateVoiceHint('standby');
       updateAmbientGlow();
-      setTimeout(() => setLcdStatus('STANDBY'), 2500);
+      setTimeout(() => {
+        setLcdStatus('STANDBY');
+        updateVoiceHint('standby');
+      }, 2500);
     } else if (status === 'idle') {
       // Channel is now clear
       if (isReceiving) {
@@ -498,6 +659,7 @@ document.addEventListener('DOMContentLoaded', () => {
       elRxLed.classList.remove('active');
       elLcdSpeaker.textContent = '--';
       setLcdStatus('STANDBY');
+      updateVoiceHint('standby');
       updateAmbientGlow();
     }
   }
@@ -547,6 +709,9 @@ document.addEventListener('DOMContentLoaded', () => {
         type: 'transmission',
         replayable: true,
       });
+
+      // Post Voice Note in chat list for incoming transmission
+      addVoiceTransmissionChatBubble(callsign, currentChannelID, durationSec, false);
       elLcdSpeaker.textContent = '--';
       setLcdStatus('STANDBY');
     }
@@ -949,7 +1114,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // PTT Actions
+  // PTT Actions - Hold to speak, release to send
   function requestFloor() {
     if (isPTTDown || isTransmitting) return;
     if (isScanning) stopScanner(false);
@@ -959,6 +1124,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     soundFX.ensureContext();
     audioEngine.ensureContext();
+    audioEngine.startPreBuffering(currentChannelID);
+
+    startTxTimer();
+    updateVoiceHint('requesting');
 
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({
@@ -970,17 +1139,45 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function releaseFloor() {
     if (!isPTTDown && !isTransmitting) return;
+    const wasTransmitting = isTransmitting;
     isPTTDown = false;
     btnPtt.classList.remove('active', 'transmitting');
     triggerHaptic([15, 25, 15]);
 
-    if (isTransmitting) {
+    const durationSec = stopTxTimer();
+
+    if (wasTransmitting) {
       isTransmitting = false;
       audioEngine.stopTransmission();
       elTxLed.classList.remove('active');
       soundFX.playRogerBeep();
-      setLcdStatus('STANDBY');
+      setLcdStatus(`SENT [${durationSec}s]`);
       updateAmbientGlow();
+      updateVoiceHint('sent');
+
+      const ch = channels.find(c => c.id === currentChannelID);
+      const chName = ch ? ch.name : `CH ${currentChannelID}`;
+
+      addActivityLog({
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        callsign: `${myCallsign} (You)`,
+        channelName: chName,
+        text: `Voice transmission sent (${durationSec}s)`,
+        type: 'transmission',
+      });
+
+      // Post Voice Note in chat list
+      addVoiceTransmissionChatBubble(myCallsign, currentChannelID, durationSec, true);
+
+      setTimeout(() => {
+        if (!isTransmitting && !isReceiving) {
+          setLcdStatus('STANDBY');
+          updateVoiceHint('standby');
+        }
+      }, 1500);
+    } else {
+      audioEngine.stopTransmission();
+      updateVoiceHint('standby');
     }
 
     if (ws && ws.readyState === WebSocket.OPEN) {
@@ -991,7 +1188,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // PTT Button Event Handlers
+  // PTT Button Event Handlers - Hold to speak, release to send
   btnPtt.addEventListener('mousedown', (e) => {
     e.preventDefault();
     if (pttMode === 'toggle') {
@@ -1003,12 +1200,18 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   window.addEventListener('mouseup', () => {
-    if (pttMode === 'hold' && isPTTDown) {
+    if (pttMode === 'hold' && (isPTTDown || isTransmitting)) {
       releaseFloor();
     }
   });
 
-  // Touch Support for Mobile / Tablet
+  window.addEventListener('blur', () => {
+    if (pttMode === 'hold' && (isPTTDown || isTransmitting)) {
+      releaseFloor();
+    }
+  });
+
+  // Touch Support for Mobile / Tablet - Hold to speak, release to send
   btnPtt.addEventListener('touchstart', (e) => {
     e.preventDefault();
     if (pttMode === 'toggle') {
@@ -1466,7 +1669,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (document.activeElement && (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT')) {
       return;
     }
-    if (e.code === 'Space' && isPTTDown && pttMode === 'hold') {
+    if (e.code === 'Space' && (isPTTDown || isTransmitting) && pttMode === 'hold') {
       e.preventDefault();
       releaseFloor();
     }
@@ -1496,6 +1699,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Toggle PTT Mode switch
   checkTogglePtt.addEventListener('change', (e) => {
     pttMode = e.target.checked ? 'toggle' : 'hold';
+    updateVoiceHint('standby');
   });
 
   // DSP Tactical Filter toggle
@@ -2995,12 +3199,63 @@ document.addEventListener('DOMContentLoaded', () => {
     btnCloseChat.addEventListener('click', closeChat);
   }
 
+  const btnChatVoice = document.getElementById('btn-chat-voice');
+  const btnChatSend = document.getElementById('btn-chat-send');
+
+  function updateChatComposerButtons() {
+    if (!chatInputText || !btnChatVoice || !btnChatSend) return;
+    const hasText = chatInputText.value.trim().length > 0;
+    btnChatVoice.style.display = hasText ? 'none' : 'flex';
+    btnChatSend.style.display = hasText ? 'flex' : 'none';
+  }
+
+  if (chatInputText) {
+    chatInputText.addEventListener('input', updateChatComposerButtons);
+    updateChatComposerButtons();
+  }
+
+  if (btnChatVoice) {
+    let isChatVoiceHolding = false;
+
+    const startChatVoice = (e) => {
+      e.preventDefault();
+      if (isChatVoiceHolding) return;
+      isChatVoiceHolding = true;
+      requestFloor();
+      btnChatVoice.classList.add('recording');
+      if (chatInputText) {
+        chatInputText.setAttribute('data-orig-ph', chatInputText.placeholder);
+        chatInputText.placeholder = '🔴 Transmitting voice... Release to send';
+      }
+    };
+
+    const stopChatVoice = (e) => {
+      if (!isChatVoiceHolding) return;
+      isChatVoiceHolding = false;
+      btnChatVoice.classList.remove('recording');
+      if (chatInputText) {
+        chatInputText.placeholder = chatInputText.getAttribute('data-orig-ph') || 'Write a message...';
+      }
+      releaseFloor();
+    };
+
+    btnChatVoice.addEventListener('mousedown', startChatVoice);
+    btnChatVoice.addEventListener('touchstart', startChatVoice, { passive: false });
+
+    window.addEventListener('mouseup', () => {
+      if (isChatVoiceHolding) stopChatVoice();
+    });
+    btnChatVoice.addEventListener('touchend', stopChatVoice, { passive: false });
+    btnChatVoice.addEventListener('touchcancel', stopChatVoice, { passive: false });
+  }
+
   if (chatComposerForm) {
     chatComposerForm.addEventListener('submit', (e) => {
       e.preventDefault();
       sendChatMessage(chatInputText ? chatInputText.value : '');
       if (chatInputText) {
         chatInputText.value = '';
+        updateChatComposerButtons();
       }
     });
   }

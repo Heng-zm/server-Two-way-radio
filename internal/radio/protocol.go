@@ -36,6 +36,10 @@ const (
 	MsgTypeVideoOffer     = "video_offer"      // WebRTC SDP Offer
 	MsgTypeVideoAnswer    = "video_answer"     // WebRTC SDP Answer
 	MsgTypeVideoICE       = "video_ice"        // WebRTC ICE Candidate
+
+	// Server-Side Audio Recording & Dispatcher Priority
+	MsgTypeTransmissionRecorded = "transmission_recorded" // Server -> Client: new archived WAV audio transmission
+	MsgTypeAllCall              = "all_call"              // Dispatcher -> All Channels: Fleet-wide announcement
 )
 
 // Floor Status States
@@ -103,6 +107,16 @@ type TransmissionEventPayload struct {
 	Callsign  string `json:"callsign"`
 }
 
+// Client <-> Server: Fleet-wide All-Call broadcast
+type AllCallPayload struct {
+	SenderID  string `json:"sender_id,omitempty"`
+	Callsign  string `json:"callsign,omitempty"`
+	Role      string `json:"role,omitempty"`
+	Text      string `json:"text,omitempty"`
+	AudioURL  string `json:"audio_url,omitempty"`
+	Timestamp int64  `json:"timestamp,omitempty"`
+}
+
 // Server -> Client: Channel Info
 type ChannelInfo struct {
 	ID             int      `json:"id"`
@@ -163,8 +177,9 @@ const (
 	AudioMagic1     = 0x41 // 'A'
 	AudioHeaderSize = 8
 
-	FlagAudioFirst = 0x01
-	FlagAudioLast  = 0x02
+	FlagAudioFirst   = 0x01
+	FlagAudioLast    = 0x02
+	FlagAudioAllCall = 0x04
 )
 
 var ErrInvalidAudioPacket = errors.New("invalid radio audio packet header")

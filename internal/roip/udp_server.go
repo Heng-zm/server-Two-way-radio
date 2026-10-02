@@ -15,7 +15,7 @@ type UDPServer struct {
 	hub    *radio.Hub
 	conn   *net.UDPConn
 	stopCh chan struct{}
-	mu     sync.Mutex
+	mu     sync.RWMutex
 	peers  map[string]*net.UDPAddr
 }
 
@@ -53,6 +53,20 @@ func (s *UDPServer) Stop() {
 	close(s.stopCh)
 	if s.conn != nil {
 		s.conn.Close()
+	}
+}
+
+// BroadcastAudio distributes radio audio packets out to all known RoIP UDP peers.
+func (s *UDPServer) BroadcastAudio(channelID int, data []byte) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	if s.conn == nil || len(s.peers) == 0 {
+		return
+	}
+
+	for _, peerAddr := range s.peers {
+		_, _ = s.conn.WriteToUDP(data, peerAddr)
 	}
 }
 
@@ -95,7 +109,11 @@ func (s *UDPServer) listenLoop() {
 			continue
 		}
 
-		// When RoIP device transmits, relay into channel
+		// When RoIP device transmits, relay into radio channel
 		log.Printf("[RoIP] Received %d bytes UDP audio from %s for Ch %d (Seq: %d)", n, remoteAddr, hdr.ChannelID, hdr.SeqNum)
+		if s.hub != nil {
+			s.hub.HandleRoIPAudio(int(hdr.ChannelID), packet)
+		}
 	}
 }
+
