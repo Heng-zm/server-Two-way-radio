@@ -1,18 +1,23 @@
 :root {
+  /* Google Sans Typography Tokens */
+  --font-sans: 'Google Sans', 'Google Sans Text', 'Product Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-display: 'Google Sans', 'Google Sans Flex', 'Product Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
   --bg-main: #0e1621;
   --bg-sidebar: #17212b;
   --bg-surface: #242f3d;
   --bg-surface-hover: #202b36;
   --bg-card: #17212b;
-  --bg-glass: rgba(23, 33, 43, 0.9);
+  --bg-glass: rgba(23, 33, 43, 0.92);
 
   --border-color: #101921;
-  --border-subtle: rgba(255, 255, 255, 0.06);
-  --border-highlight: rgba(255, 255, 255, 0.14);
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-highlight: rgba(255, 255, 255, 0.16);
 
   --text-primary: #ffffff;
-  --text-secondary: #7f91a4;
-  --text-tertiary: #64748b;
+  --text-secondary: #8da0b6;
+  --text-tertiary: #67788e;
 
   --color-brand: #2aabee;
   --color-brand-hover: #229ed9;
@@ -38,21 +43,36 @@
 }
 
 body {
-  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
   background-color: var(--bg-main);
   color: var(--text-primary);
-  letter-spacing: -0.015em;
+  letter-spacing: -0.01em;
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
   display: flex;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
 }
 
-h1, h2, h3, h4, .brand-text, .voice-state-title, .modal-title, .chat-header-title {
-  font-family: 'Outfit', 'Plus Jakarta Sans', sans-serif;
-  letter-spacing: -0.025em;
+button, input, select, textarea {
+  font-family: var(--font-sans);
+  letter-spacing: -0.005em;
+}
+
+h1, h2, h3, h4, h5, h6, 
+.brand-text, 
+.voice-state-title, 
+.modal-title, 
+.chat-header-title,
+.tg-chan-name,
+.topbar-channel-name,
+.dialog-title,
+.drawer-title {
+  font-family: var(--font-display);
+  letter-spacing: -0.02em;
+  font-weight: 600;
 }
 
 /* ========================================================
@@ -829,7 +849,7 @@ h1, h2, h3, h4, .brand-text, .voice-state-title, .modal-title, .chat-header-titl
 }
 
 .ping-text {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 600;
   color: var(--text-secondary);
@@ -858,7 +878,7 @@ h1, h2, h3, h4, .brand-text, .voice-state-title, .modal-title, .chat-header-titl
 }
 
 .frequency-badge {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11.5px;
   font-weight: 500;
   color: var(--text-secondary);
@@ -1839,7 +1859,7 @@ h1, h2, h3, h4, .brand-text, .voice-state-title, .modal-title, .chat-header-titl
 }
 
 .chat-bubble-time {
-  font-family: -apple-system, BlinkMacSystemFont, "Roboto", sans-serif;
+  font-family: var(--font-sans);
   font-size: 10px;
   color: rgba(255, 255, 255, 0.6);
 }
@@ -2314,7 +2334,7 @@ h1, h2, h3, h4, .brand-text, .voice-state-title, .modal-title, .chat-header-titl
 }
 
 .video-call-timer {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 11px;
   color: var(--text-secondary);
   background: rgba(255, 255, 255, 0.08);
@@ -2992,15 +3012,15 @@ button, input, select, .voice-orb, .dock-btn, .icon-toggle-btn, .popover-channel
 }
 
 .map-hud-title {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-weight: 700;
   font-size: 14px;
-  letter-spacing: 0.8px;
+  letter-spacing: -0.01em;
   color: #f3f4f6;
 }
 
 .map-badge-live {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: var(--font-mono);
   font-size: 9px;
   font-weight: 700;
   color: #10b981;
@@ -3077,7 +3097,7 @@ button, input, select, .voice-orb, .dock-btn, .icon-toggle-btn, .popover-channel
   align-items: center;
   gap: 6px;
   transition: all 0.2s;
-  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-family: var(--font-sans);
 }
 
 .map-action-btn:hover {
@@ -3298,7 +3318,7 @@ button, input, select, .voice-orb, .dock-btn, .icon-toggle-btn, .popover-channel
    ======================================================== */
 .mapboxgl-map {
   background: #090a0e !important;
-  font-family: 'Plus Jakarta Sans', sans-serif !important;
+  font-family: var(--font-sans) !important;
 }
 
 .mapboxgl-canvas {
@@ -3597,10 +3617,11 @@ button, input, select, .voice-orb, .dock-btn, .icon-toggle-btn, .popover-channel
 }
 
 .map-popup-title {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-display);
   font-size: 14px;
   font-weight: 700;
   color: #ffffff;
+  letter-spacing: -0.015em;
   display: flex;
   align-items: center;
   justify-content: space-between;
