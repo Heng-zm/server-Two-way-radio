@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Telegram Radio | Tactical Two-Way RoIP</title>
-  <link rel="stylesheet" href="css/radio.css?v=2.5.0">
+  <link rel="stylesheet" href="css/radio.css?v=2.6.0">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%232aabee'><circle cx='12' cy='12' r='12'/><path d='M18.5 5.5L4.5 11l5 2 7-6-5.5 7.5 5 3.5 2.5-12.5z' fill='white'/></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -740,18 +740,26 @@
   <!-- Tactical GPS Live Vector Map Modal Stage (Mapbox GL JS) -->
   <div class="modal-overlay tactical-map-modal-overlay" id="map-modal" style="display: none;">
     <div class="tactical-map-stage" id="tactical-map-stage">
+      <!-- Tactical Corner Visual Accents for Stage -->
+      <div class="tactical-corner tl"></div>
+      <div class="tactical-corner tr"></div>
+      <div class="tactical-corner bl"></div>
+      <div class="tactical-corner br"></div>
+
       <!-- Tactical Map HUD Header -->
       <div class="map-hud-header">
         <div class="map-hud-left">
           <div class="map-radar-indicator">
-            <span class="radar-ping-ring"></span>
+            <span class="radar-ping-ring outer"></span>
+            <span class="radar-ping-ring inner"></span>
             <span class="radar-ping-core"></span>
           </div>
           <div class="map-hud-title-col">
             <div class="map-hud-title-row">
-              <span class="map-hud-title">TACTICAL VECTOR MAP</span>
-              <span class="map-badge-live">MAPBOX GL</span>
+              <span class="map-hud-title">TACTICAL GPS RADAR</span>
+              <span class="map-badge-live">LIVE HUD</span>
               <span class="map-badge-mode" id="map-theme-badge">OBSIDIAN</span>
+              <span class="map-badge-grid" id="map-grid-status">WGS-84 LOCK</span>
             </div>
             <span class="map-hud-subtitle" id="map-active-channel-info">CH 01 • CENTRAL DISPATCH</span>
           </div>
@@ -769,6 +777,10 @@
           <div class="hud-stat-badge" title="Distance from Your GPS to Active Repeater">
             <span class="stat-num" id="map-hud-my-dist">--</span>
             <span class="stat-lbl">To Repeater</span>
+          </div>
+          <div class="hud-stat-badge hud-telemetry-badge" title="Live Map Target Coordinates">
+            <span class="stat-num stat-coords" id="map-telemetry-coords">--°, --°</span>
+            <span class="stat-lbl">Target Coords</span>
           </div>
         </div>
 
@@ -829,13 +841,52 @@
         </div>
       </div>
 
-      <!-- Quick Repeater Channel Selector Ribbon -->
-      <div class="radar-repeater-ribbon" id="radar-repeater-ribbon">
-        <!-- Dynamically populated channel selector chips -->
+      <!-- Tactical Secondary Telemetry Strip & Quick Repeater Ribbon -->
+      <div class="map-telemetry-subbar">
+        <div class="telemetry-readouts">
+          <span class="telemetry-chip"><span class="chip-k">HDG</span><span class="chip-v" id="map-telemetry-hdg">000° N</span></span>
+          <span class="telemetry-chip"><span class="chip-k">ZOOM</span><span class="chip-v" id="map-telemetry-zoom">12.5</span></span>
+          <span class="telemetry-chip"><span class="chip-k">PITCH</span><span class="chip-v" id="map-telemetry-pitch">0°</span></span>
+          <span class="telemetry-chip pulse-chip"><span class="chip-dot"></span><span class="chip-v" id="map-telemetry-status">RADAR ACTIVE</span></span>
+        </div>
+        <!-- Quick Repeater Channel Selector Ribbon -->
+        <div class="radar-repeater-ribbon" id="radar-repeater-ribbon">
+          <!-- Dynamically populated channel selector chips -->
+        </div>
       </div>
 
-      <!-- Tactical Map Viewport (Clean Mapbox GL Vector Container) -->
+      <!-- Tactical Map Viewport -->
       <div class="tactical-map-viewport" id="tactical-map-viewport">
+        <!-- Tactical Sci-Fi HUD Overlay (Crosshairs, Grid Brackets, Status Callouts) -->
+        <div class="tactical-hud-overlay" id="tactical-hud-overlay">
+          <!-- Central Crosshair / Reticle -->
+          <div class="tactical-reticle">
+            <div class="reticle-ring"></div>
+            <div class="reticle-ring inner"></div>
+            <div class="reticle-center-dot"></div>
+            <div class="reticle-line reticle-x"></div>
+            <div class="reticle-line reticle-y"></div>
+            <span class="reticle-cardinal n">N</span>
+            <span class="reticle-cardinal s">S</span>
+            <span class="reticle-cardinal e">E</span>
+            <span class="reticle-cardinal w">W</span>
+          </div>
+
+          <!-- Tactical HUD Corner Tags -->
+          <div class="hud-corner-tag tl">
+            <span class="tag-title">SYS STATUS</span>
+            <span class="tag-val">TX/RX ONLINE</span>
+          </div>
+          <div class="hud-corner-tag tr">
+            <span class="tag-title">SAT-LINK</span>
+            <span class="tag-val">MAPBOX v3.4</span>
+          </div>
+          <div class="hud-corner-tag bl">
+            <span class="tag-title">DATUM</span>
+            <span class="tag-val">WGS-84 / MIL-STD</span>
+          </div>
+        </div>
+
         <!-- Mapbox GL Map Container -->
         <div class="tactical-map-container" id="tactical-map-view"></div>
       </div>
@@ -896,8 +947,8 @@
   <!-- Mapbox GL JS Library -->
   <script src="https://api.mapbox.com/mapbox-gl-js/v3.4.0/mapbox-gl.js"></script>
   <!-- Audio Processing Scripts -->
-  <script src="js/sounds.js?v=2.5.0"></script>
-  <script src="js/audio.js?v=2.5.0"></script>
-  <script src="js/radio.js?v=2.5.0"></script>
+  <script src="js/sounds.js?v=2.6.0"></script>
+  <script src="js/audio.js?v=2.6.0"></script>
+  <script src="js/radio.js?v=2.6.0"></script>
 </body>
 </html>

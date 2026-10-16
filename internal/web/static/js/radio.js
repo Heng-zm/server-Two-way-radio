@@ -1944,6 +1944,38 @@ document.addEventListener('DOMContentLoaded', () => {
   const mapHudMyDistEl = document.getElementById('map-hud-my-dist');
   const mapActiveChannelInfoEl = document.getElementById('map-active-channel-info');
   const mapUnitCardsEl = document.getElementById('map-unit-cards');
+  const mapTelemetryCoordsEl = document.getElementById('map-telemetry-coords');
+  const mapTelemetryHdgEl = document.getElementById('map-telemetry-hdg');
+  const mapTelemetryZoomEl = document.getElementById('map-telemetry-zoom');
+  const mapTelemetryPitchEl = document.getElementById('map-telemetry-pitch');
+  const mapTelemetryStatusEl = document.getElementById('map-telemetry-status');
+
+  function updateMapTelemetry() {
+    if (!tacticalMap) return;
+    try {
+      const center = tacticalMap.getCenter();
+      const zoom = tacticalMap.getZoom();
+      const pitch = Math.round(tacticalMap.getPitch());
+      const bearing = Math.round((tacticalMap.getBearing() + 360) % 360);
+
+      if (mapTelemetryCoordsEl && center) {
+        const latHemi = center.lat >= 0 ? 'N' : 'S';
+        const lonHemi = center.lng >= 0 ? 'E' : 'W';
+        mapTelemetryCoordsEl.textContent = `${Math.abs(center.lat).toFixed(4)}° ${latHemi}, ${Math.abs(center.lng).toFixed(4)}° ${lonHemi}`;
+      }
+      if (mapTelemetryZoomEl) {
+        mapTelemetryZoomEl.textContent = zoom ? zoom.toFixed(1) : '12.5';
+      }
+      if (mapTelemetryPitchEl) {
+        mapTelemetryPitchEl.textContent = `${pitch}°`;
+      }
+      if (mapTelemetryHdgEl) {
+        const cardinals = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+        const idx = Math.round(bearing / 22.5) % 16;
+        mapTelemetryHdgEl.textContent = `${bearing.toString().padStart(3, '0')}° ${cardinals[idx]}`;
+      }
+    } catch (e) {}
+  }
 
   window.radioChangeChannel = function(id) {
     changeChannel(id);
@@ -2110,12 +2142,19 @@ document.addEventListener('DOMContentLoaded', () => {
     tacticalMap.on('load', () => {
       setupMapSourcesAndLayers();
       updateTacticalMap();
+      updateMapTelemetry();
     });
 
     tacticalMap.on('style.load', () => {
       setupMapSourcesAndLayers();
       updateTacticalMap();
+      updateMapTelemetry();
     });
+
+    tacticalMap.on('move', updateMapTelemetry);
+    tacticalMap.on('zoom', updateMapTelemetry);
+    tacticalMap.on('rotate', updateMapTelemetry);
+    tacticalMap.on('pitch', updateMapTelemetry);
   }
 
   function toggleMapStyle() {
@@ -2136,6 +2175,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.radioSoundFX && window.radioSoundFX.playScanClick) {
       window.radioSoundFX.playScanClick();
     }
+    setTimeout(updateMapTelemetry, 200);
   }
 
   function toggleMap3DMode() {
@@ -2161,6 +2201,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (window.radioSoundFX && window.radioSoundFX.playScanClick) {
       window.radioSoundFX.playScanClick();
     }
+    setTimeout(updateMapTelemetry, 300);
   }
 
   function createSelfMarkerElement() {
@@ -2189,13 +2230,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function createRepeaterMarkerElement(ch, isActive = false) {
     const el = document.createElement('div');
-    const color = ch.color || '#f59e0b';
+    const color = ch.color || '#00e676';
     el.className = `mapbox-tower-wrap${isActive ? ' is-active' : ''}`;
     el.style.setProperty('--tower-color', color);
     el.innerHTML = `
       <div class="mapbox-tower-icon">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+          <path d="M12 2v20"></path>
+          <path d="m4.93 10.93 1.41 1.41"></path>
+          <path d="M2 18h2"></path>
+          <path d="M20 18h2"></path>
+          <path d="m19.07 10.93-1.41 1.41"></path>
+          <path d="M7 18h10"></path>
+          <circle cx="12" cy="7" r="2"></circle>
         </svg>
       </div>
       <div class="mapbox-tower-badge">CH ${ch.id}</div>
@@ -2542,6 +2589,8 @@ document.addEventListener('DOMContentLoaded', () => {
         mapUnitCardsEl.appendChild(peerCard);
       });
     }
+
+    updateMapTelemetry();
   }
 
   function updateTacticalMapTalking(callsign, isTalking) {
