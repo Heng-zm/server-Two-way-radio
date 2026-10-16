@@ -229,15 +229,15 @@ func main() {
 			return
 		}
 
-		// Enforce upload size ceiling (default 100MB, configurable via MAX_UPLOAD_SIZE_MB)
-		maxUploadMB := 100
+		// Enforce upload size ceiling (default 500MB, configurable via MAX_UPLOAD_SIZE_MB)
+		maxUploadMB := 500
 		if envLimit := os.Getenv("MAX_UPLOAD_SIZE_MB"); envLimit != "" {
 			if val, err := strconv.Atoi(envLimit); err == nil && val > 0 {
 				maxUploadMB = val
 			}
 		}
 		maxUploadSize := int64(maxUploadMB) << 20
-		const maxMemory = 10 << 20 // 10MB in RAM, overflow to temp file
+		const maxMemory = 16 << 20 // 16MB in RAM, overflow to temp file
 
 		r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
 
@@ -387,10 +387,12 @@ func main() {
 	mux.HandleFunc("/", makeOptimizedStaticHandler(fileServer))
 
 	server := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.HTTPPort),
-		Handler:      mux,
-		ReadTimeout:  15 * time.Second,
-		WriteTimeout: 15 * time.Second,
+		Addr:              fmt.Sprintf(":%d", cfg.HTTPPort),
+		Handler:           mux,
+		ReadHeaderTimeout: 15 * time.Second,
+		ReadTimeout:       10 * time.Minute,
+		WriteTimeout:      10 * time.Minute,
+		IdleTimeout:       120 * time.Second,
 	}
 
 	// Graceful shutdown handling

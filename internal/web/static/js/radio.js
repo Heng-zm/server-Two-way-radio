@@ -2893,7 +2893,16 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   async function compressImage(file, maxDimension = 1400, quality = 0.8) {
-    if (!file || !file.type || !file.type.startsWith('image/') || file.type === 'image/gif') {
+    if (
+      !file ||
+      !file.type ||
+      !file.type.startsWith('image/') ||
+      file.type === 'image/gif' ||
+      file.type.includes('tiff') ||
+      file.type.includes('svg') ||
+      /\.(tif|tiff|svg|psd|raw|cr2|nef)$/i.test(file.name) ||
+      file.size > 20 * 1024 * 1024
+    ) {
       return file;
     }
     return new Promise((resolve) => {
@@ -2946,9 +2955,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (hasFile) {
       let file = fileInput.files[0];
-      const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
+      const MAX_UPLOAD_BYTES = 500 * 1024 * 1024;
       if (file.size > MAX_UPLOAD_BYTES) {
-        alert(`File "${file.name}" exceeds the maximum permitted size of 100MB.`);
+        alert(`File "${file.name}" exceeds the maximum permitted size of 500MB.`);
         clearChatAttachment();
         return;
       }
@@ -3288,8 +3297,8 @@ document.addEventListener('DOMContentLoaded', () => {
     chatFileInput.addEventListener('change', () => {
       if (chatFileInput.files && chatFileInput.files.length > 0) {
         const file = chatFileInput.files[0];
-        if (file.size > 100 * 1024 * 1024) {
-          alert(`File "${file.name}" is too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maximum allowed upload size is 100MB.`);
+        if (file.size > 500 * 1024 * 1024) {
+          alert(`File "${file.name}" is too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maximum allowed upload size is 500MB.`);
           clearChatAttachment();
           return;
         }
