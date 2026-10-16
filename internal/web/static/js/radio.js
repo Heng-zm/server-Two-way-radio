@@ -2863,7 +2863,17 @@ document.addEventListener('DOMContentLoaded', () => {
             reject(new Error('Invalid server response'));
           }
         } else {
-          reject(new Error('Upload failed (HTTP ' + xhr.status + ')'));
+          let errMsg = '';
+          try {
+            const errData = JSON.parse(xhr.responseText);
+            errMsg = errData.error || errData.message;
+          } catch (_) {
+            errMsg = (xhr.responseText || '').trim();
+          }
+          if (!errMsg) {
+            errMsg = 'Upload failed (HTTP ' + xhr.status + ')';
+          }
+          reject(new Error(errMsg));
         }
       };
 
@@ -2936,6 +2946,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (hasFile) {
       let file = fileInput.files[0];
+      const MAX_UPLOAD_BYTES = 32 * 1024 * 1024;
+      if (file.size > MAX_UPLOAD_BYTES) {
+        alert(`File "${file.name}" exceeds the maximum permitted size of 32MB.`);
+        clearChatAttachment();
+        return;
+      }
+
       const previewName = document.getElementById('attachment-preview-name');
       const progressContainer = document.getElementById('upload-progress-container');
       const progressFill = document.getElementById('upload-progress-fill');
@@ -3002,8 +3019,8 @@ document.addEventListener('DOMContentLoaded', () => {
           return;
         }
 
-        // Fallback: If HTTP upload fails, try sending via base64 data URL if size is under 750KB
-        if (file.size < 750 * 1024) {
+        // Fallback: If HTTP upload fails due to network hiccup, try sending via base64 data URL if size is under 750KB
+        if (file.size < 750 * 1024 && !err.message.includes('not supported for security reasons')) {
           if (previewName) previewName.textContent = 'Encoding data stream...';
           const reader = new FileReader();
           reader.onload = function(e) {
@@ -3271,11 +3288,17 @@ document.addEventListener('DOMContentLoaded', () => {
     chatFileInput.addEventListener('change', () => {
       if (chatFileInput.files && chatFileInput.files.length > 0) {
         const file = chatFileInput.files[0];
+        if (file.size > 32 * 1024 * 1024) {
+          alert(`File "${file.name}" is too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maximum allowed upload size is 32MB.`);
+          clearChatAttachment();
+          return;
+        }
         btnChatAttach.style.color = 'var(--color-brand)';
         const previewBar = document.getElementById('chat-attachment-preview-bar');
         const previewName = document.getElementById('attachment-preview-name');
         if (previewBar && previewName) {
-          previewName.textContent = file.name + ` (${(file.size / 1024).toFixed(0)} KB)`;
+          const sizeKb = file.size >= 1024 * 1024 ? (file.size / (1024 * 1024)).toFixed(1) + ' MB' : (file.size / 1024).toFixed(0) + ' KB';
+          previewName.textContent = `${file.name} (${sizeKb})`;
           previewBar.style.display = 'flex';
         }
       } else {

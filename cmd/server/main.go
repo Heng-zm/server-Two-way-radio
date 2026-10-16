@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -211,12 +212,20 @@ func main() {
 		w.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 
+		respondJSONError := func(code int, msg string) {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(code)
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"error": msg,
+			})
+		}
+
 		if r.Method == http.MethodOptions {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
 		if r.Method != http.MethodPost {
-			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			respondJSONError(http.StatusMethodNotAllowed, "Method not allowed")
 			return
 		}
 
@@ -225,31 +234,102 @@ func main() {
 		r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
 
 		if err := r.ParseMultipartForm(maxUploadSize); err != nil {
-			http.Error(w, "File exceeds maximum permitted size (32MB)", http.StatusBadRequest)
+			var maxBytesErr *http.MaxBytesError
+			if errors.As(err, &maxBytesErr) || strings.Contains(strings.ToLower(err.Error()), "too large") {
+				respondJSONError(http.StatusRequestEntityTooLarge, "File exceeds maximum permitted size (32MB)")
+				return
+			}
+			respondJSONError(http.StatusBadRequest, "Invalid upload payload: "+err.Error())
 			return
 		}
 
 		file, header, err := r.FormFile("file")
 		if err != nil {
-			http.Error(w, "Failed to read file: "+err.Error(), http.StatusBadRequest)
+			respondJSONError(http.StatusBadRequest, "No file provided in form field 'file': "+err.Error())
 			return
 		}
 		defer file.Close()
 
 		ext := strings.ToLower(filepath.Ext(header.Filename))
+		contentType := header.Header.Get("Content-Type")
+
+		// If no extension found in filename, infer from Content-Type MIME
+		if ext == "" && contentType != "" {
+			cleanMime := strings.ToLower(strings.TrimSpace(strings.Split(contentType, ";")[0]))
+			switch cleanMime {
+			case "image/jpeg":
+				ext = ".jpg"
+			case "image/png":
+				ext = ".png"
+			case "image/gif":
+				ext = ".gif"
+			case "image/webp":
+				ext = ".webp"
+			case "image/svg+xml":
+				ext = ".svg"
+			case "image/heic":
+				ext = ".heic"
+			case "image/heif":
+				ext = ".heif"
+			case "image/avif":
+				ext = ".avif"
+			case "audio/mpeg", "audio/mp3":
+				ext = ".mp3"
+			case "audio/ogg":
+				ext = ".ogg"
+			case "audio/wav", "audio/x-wav":
+				ext = ".wav"
+			case "audio/aac":
+				ext = ".aac"
+			case "audio/flac":
+				ext = ".flac"
+			case "audio/webm":
+				ext = ".weba"
+			case "video/mp4":
+				ext = ".mp4"
+			case "video/webm":
+				ext = ".webm"
+			case "video/quicktime":
+				ext = ".mov"
+			case "text/plain":
+				ext = ".txt"
+			case "text/csv":
+				ext = ".csv"
+			case "application/pdf":
+				ext = ".pdf"
+			case "application/json":
+				ext = ".json"
+			case "application/zip":
+				ext = ".zip"
+			}
+		}
+
 		allowedExts := map[string]bool{
 			// Images
 			".jpg": true, ".jpeg": true, ".png": true, ".gif": true, ".webp": true,
+			".bmp": true, ".ico": true, ".tiff": true, ".tif": true, ".svg": true,
+			".heic": true, ".heif": true, ".avif": true,
 			// Audio
-			".mp3": true, ".ogg": true, ".wav": true, ".m4a": true, ".aac": true, ".flac": true,
+			".mp3": true, ".ogg": true, ".wav": true, ".m4a": true, ".aac": true,
+			".flac": true, ".opus": true, ".weba": true, ".mid": true, ".midi": true,
 			// Video
-			".mp4": true, ".webm": true,
-			// Documents & Archives
-			".pdf": true, ".txt": true, ".zip": true, ".doc": true, ".docx": true, ".xls": true, ".xlsx": true, ".csv": true,
+			".mp4": true, ".webm": true, ".mov": true, ".mkv": true, ".avi": true,
+			".m4v": true, ".3gp": true, ".wmv": true,
+			// Documents & Data
+			".pdf": true, ".txt": true, ".csv": true, ".tsv": true, ".log": true,
+			".json": true, ".xml": true, ".md": true, ".markdown": true,
+			".doc": true, ".docx": true, ".xls": true, ".xlsx": true,
+			".ppt": true, ".pptx": true, ".rtf": true, ".odt": true, ".ods": true,
+			// Archives
+			".zip": true, ".rar": true, ".7z": true, ".tar": true, ".gz": true, ".bz2": true,
 		}
 
 		if !allowedExts[ext] {
-			http.Error(w, "File type not permitted for security reasons", http.StatusBadRequest)
+			displayExt := ext
+			if displayExt == "" {
+				displayExt = "unspecified"
+			}
+			respondJSONError(http.StatusBadRequest, fmt.Sprintf("File format '%s' is not supported for security reasons", displayExt))
 			return
 		}
 
@@ -259,13 +339,13 @@ func main() {
 
 		dst, err := os.Create(dstPath)
 		if err != nil {
-			http.Error(w, "Failed to save file: "+err.Error(), http.StatusInternalServerError)
+			respondJSONError(http.StatusInternalServerError, "Failed to save file: "+err.Error())
 			return
 		}
 		defer dst.Close()
 
 		if _, err := io.Copy(dst, file); err != nil {
-			http.Error(w, "Failed to write file: "+err.Error(), http.StatusInternalServerError)
+			respondJSONError(http.StatusInternalServerError, "Failed to write file data: "+err.Error())
 			return
 		}
 
