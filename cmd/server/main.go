@@ -229,14 +229,22 @@ func main() {
 			return
 		}
 
-		// Enforce strict 32MB request body ceiling to prevent disk exhaustion DoS
-		const maxUploadSize = 32 << 20 // 32 MB
+		// Enforce upload size ceiling (default 100MB, configurable via MAX_UPLOAD_SIZE_MB)
+		maxUploadMB := 100
+		if envLimit := os.Getenv("MAX_UPLOAD_SIZE_MB"); envLimit != "" {
+			if val, err := strconv.Atoi(envLimit); err == nil && val > 0 {
+				maxUploadMB = val
+			}
+		}
+		maxUploadSize := int64(maxUploadMB) << 20
+		const maxMemory = 10 << 20 // 10MB in RAM, overflow to temp file
+
 		r.Body = http.MaxBytesReader(w, r.Body, maxUploadSize)
 
-		if err := r.ParseMultipartForm(maxUploadSize); err != nil {
+		if err := r.ParseMultipartForm(maxMemory); err != nil {
 			var maxBytesErr *http.MaxBytesError
 			if errors.As(err, &maxBytesErr) || strings.Contains(strings.ToLower(err.Error()), "too large") {
-				respondJSONError(http.StatusRequestEntityTooLarge, "File exceeds maximum permitted size (32MB)")
+				respondJSONError(http.StatusRequestEntityTooLarge, fmt.Sprintf("File exceeds maximum permitted size (%dMB)", maxUploadMB))
 				return
 			}
 			respondJSONError(http.StatusBadRequest, "Invalid upload payload: "+err.Error())

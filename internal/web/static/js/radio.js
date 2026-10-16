@@ -2946,9 +2946,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (hasFile) {
       let file = fileInput.files[0];
-      const MAX_UPLOAD_BYTES = 32 * 1024 * 1024;
+      const MAX_UPLOAD_BYTES = 100 * 1024 * 1024;
       if (file.size > MAX_UPLOAD_BYTES) {
-        alert(`File "${file.name}" exceeds the maximum permitted size of 32MB.`);
+        alert(`File "${file.name}" exceeds the maximum permitted size of 100MB.`);
         clearChatAttachment();
         return;
       }
@@ -3288,8 +3288,8 @@ document.addEventListener('DOMContentLoaded', () => {
     chatFileInput.addEventListener('change', () => {
       if (chatFileInput.files && chatFileInput.files.length > 0) {
         const file = chatFileInput.files[0];
-        if (file.size > 32 * 1024 * 1024) {
-          alert(`File "${file.name}" is too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maximum allowed upload size is 32MB.`);
+        if (file.size > 100 * 1024 * 1024) {
+          alert(`File "${file.name}" is too large (${(file.size / (1024 * 1024)).toFixed(1)} MB). Maximum allowed upload size is 100MB.`);
           clearChatAttachment();
           return;
         }
